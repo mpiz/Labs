@@ -1,5 +1,11 @@
 #include "VFEM_o2_t1_quad.h"
 
+double VFEM_o2_t1_quad::get_dof_weight(dof_type glob_dof_i) {
+	auto loc_dof = glob_to_loc[glob_dof_i];
+
+	return solutions[0][loc_dof];
+}
+
 void VFEM_o2_t1_quad::set_elements(vector<quadelement>& s_faces, set<dof_type>& bound_dofs) {
 	// Инициализируем степени свободы
 	dofs_n = 1;
@@ -35,3 +41,8 @@ void VFEM_o2_t1_quad::calculate() {
 
 
 }
+
+double VFEM_o2_t1_quad::get_lambda(quadelement& el){
+	return 1.0;
+}
+

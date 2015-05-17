@@ -174,13 +174,7 @@ vec3d quadelement::vector_basis_v(int i, double x, double y, double z) {
 			val = vec3d(0, 1-u*u, 0);
 			break;
 		case 9:
-			val = vec3d(0, (1-u*u)*v, 0);
-			break;
-		case 10:
 			val = vec3d(1-v*v, 0, 0);
-			break;
-		case 11:
-			val = vec3d((1-v*v)*u, 0, 0);
 			break;
 
 	};

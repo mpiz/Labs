@@ -10,13 +10,16 @@ class VFEM_o2_t1_cube: public BaseElement<cubeelement> {
 	double get_lambda(cubeelement& el);
 
 	void input_mesh(string file_nodes, string file_elements);
-	void input_bound(string file_nodes);
+	void input_bound(string file_elements);
 
+	void calculate();
 
  private:
 
 	dof_type get_dof_number(vector<node>& el_nodes);
-	void create_element(vector<int> nodes_numbs, int el_i);
+	void create_element(vector<int>& nodes_numbs, int el_i);
+	void create_bound_element(vector<int>& nodes_numbs, int el_i);
+	void prepare_boundry();
 
 	enum class GEOM_TYPES{EDGE, FACE, VOLUME};
 
@@ -33,6 +36,14 @@ class VFEM_o2_t1_cube: public BaseElement<cubeelement> {
 	dof_type cur_dof_count;
 
 	int cur_edge_count, cur_face_count;
+
+	VFEM_o2_t1_quad boundory_method;
+
+	vector<dof_type> first_bound_dofs;
+	set<dof_type> first_bound_dofs_set;
+	vector<quadelement> bound_faces;
+	int first_bound_n;
+	int first_bound_elements_n;
 
 
 

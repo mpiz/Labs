@@ -15,7 +15,7 @@ template<typename elementT> class BaseElement {
 	 vector<dof_type> get_dofs();
 	 vector<dof_type> get_local_dofs(); //Возвращает локальные степени свободы в глобальной нумерации
 
-	// virtual void calculate() = 0;
+		virtual void calculate() = 0;
 	// virtual void input_mesh(string file_name) = 0;
 
 	 //virtual double vales(dof_type glob_dof_n, node pn) = 0;	// По глобальному номеру базисной функции и точке вычислем значение
