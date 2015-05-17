@@ -1,4 +1,4 @@
-﻿Построение начато 17.05.2015 16:33:48.
+﻿Построение начато 17.05.2015 16:40:51.
      1>Проект "C:\Для Git\Labs\МКЭА\lab2\lab2\lab2.vcxproj" в узле 2 (целевые объекты Rebuild).
      1>ClCompile:
          C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt CGM.cpp elements_classes.cpp geom_classes.cpp integration_points.cpp launch.cpp VFEM_o2_t1_cube.cpp VFEM_o2_t1_quad.cpp
@@ -59,4 +59,4 @@
 
 Построение успешно завершено.
 
-Затраченное время: 00:00:12.04
+Затраченное время: 00:00:06.93

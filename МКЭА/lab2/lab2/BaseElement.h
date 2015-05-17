@@ -324,8 +324,6 @@ template<typename elementT> template<typename func_t> void BaseElement<elementT>
 			di[i_dof] += A_loc[i][i];
 
 		}
-
-		// Базис первого порядка - правая часть нулевая
 	}
 
 
