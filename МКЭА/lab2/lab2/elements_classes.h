@@ -102,7 +102,7 @@ class cubeelement {
 	  dof_type& operator [] (int i);
 	   double integrate(func3d integ_func);
 
-	  dyn_matrix get_local_matrix(double mu, double k_sq);
+	  dyn_matrix get_local_matrix(double mu);
 	  vector<double> get_local_right_part(vfunc3d rp_func);
 
 	  vec3d vector_basis_v(int i, double x, double y, double z);

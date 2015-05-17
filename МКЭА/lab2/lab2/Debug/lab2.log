@@ -1,32 +1,26 @@
-﻿Построение начато 17.05.2015 13:52:40.
-     1>Проект "C:\Users\adm\Dropbox\Магистратура\МКЭА\lab2\lab2\lab2.vcxproj" в узле 2 (целевые объекты Build).
+﻿Построение начато 17.05.2015 16:19:56.
+     1>Проект "C:\Для Git\Labs\МКЭА\lab2\lab2\lab2.vcxproj" в узле 2 (целевые объекты Build).
      1>ClCompile:
-         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt VFEM_o2_t1_quad.cpp
-         VFEM_o2_t1_quad.cpp
-     1>c:\users\adm\dropbox\магистратура\мкэа\lab2\lab2\baseelement.h(298): warning C4018: <: несоответствие типов со знаком и без знака
-                 c:\users\adm\dropbox\магистратура\мкэа\lab2\lab2\vfem_o2_t1_quad.cpp(29): см. ссылку на создание экземпляров функции шаблон при компиляции "void BaseElement<elementT>::generate_matrix_with_out_bound<vfunc3d>(std::vector<_Ty>)"
-                 with
-                 [
-                     elementT=quadelement,
-                     _Ty=vfunc3d
-                 ]
-                 c:\users\adm\dropbox\магистратура\мкэа\lab2\lab2\vfem_o2_t1_quad.cpp(29): см. ссылку на создание экземпляров функции шаблон при компиляции "void BaseElement<elementT>::generate_matrix_with_out_bound<vfunc3d>(std::vector<_Ty>)"
-                 with
-                 [
-                     elementT=quadelement,
-                     _Ty=vfunc3d
-                 ]
+         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt elements_classes.cpp
+         elements_classes.cpp
+     1>c:\для git\labs\мкэа\lab2\lab2\elements_classes.cpp(91): warning C4018: <: несоответствие типов со знаком и без знака
+     1>c:\для git\labs\мкэа\lab2\lab2\elements_classes.cpp(222): warning C4018: <: несоответствие типов со знаком и без знака
+     1>c:\для git\labs\мкэа\lab2\lab2\elements_classes.cpp(240): warning C4018: <: несоответствие типов со знаком и без знака
+     1>c:\для git\labs\мкэа\lab2\lab2\elements_classes.cpp(344): warning C4018: <: несоответствие типов со знаком и без знака
+     1>c:\для git\labs\мкэа\lab2\lab2\elements_classes.cpp(366): warning C4018: <: несоответствие типов со знаком и без знака
+     1>c:\для git\labs\мкэа\lab2\lab2\elements_classes.cpp(654): warning C4002: слишком много фактических параметров для макроопределения "phi"
+     1>c:\для git\labs\мкэа\lab2\lab2\elements_classes.cpp(660): warning C4002: слишком много фактических параметров для макроопределения "phi"
        Link:
-         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\adm\Dropbox\Магистратура\МКЭА\lab2\Debug\lab2.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\adm\Dropbox\Магистратура\МКЭА\lab2\Debug\lab2.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\adm\Dropbox\Магистратура\МКЭА\lab2\Debug\lab2.lib" /MACHINE:X86 Debug\CGM.obj
+         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Для Git\Labs\МКЭА\lab2\Debug\lab2.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Для Git\Labs\МКЭА\lab2\Debug\lab2.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Для Git\Labs\МКЭА\lab2\Debug\lab2.lib" /MACHINE:X86 Debug\CGM.obj
          Debug\elements_classes.obj
          Debug\geom_classes.obj
          Debug\integration_points.obj
          Debug\launch.obj
          Debug\VFEM_o2_t1_cube.obj
          Debug\VFEM_o2_t1_quad.obj
-         lab2.vcxproj -> C:\Users\adm\Dropbox\Магистратура\МКЭА\lab2\Debug\lab2.exe
-     1>Построение проекта "C:\Users\adm\Dropbox\Магистратура\МКЭА\lab2\lab2\lab2.vcxproj" завершено (целевые объекты Build).
+         lab2.vcxproj -> C:\Для Git\Labs\МКЭА\lab2\Debug\lab2.exe
+     1>Построение проекта "C:\Для Git\Labs\МКЭА\lab2\lab2\lab2.vcxproj" завершено (целевые объекты Build).
 
 Построение успешно завершено.
 
-Затраченное время: 00:00:02.64
+Затраченное время: 00:00:02.32

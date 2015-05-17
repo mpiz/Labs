@@ -272,6 +272,7 @@ double cubeelement::integrate(func3d integ_func) {
 
 }
 
+
 void cubeelement::init_coords() {
 
 	// Упорядочим все точки, сначала по z, потом по y, потом по x
@@ -330,10 +331,15 @@ point cubeelement::to_local_cord(point p_glob) {
 	return point(2 * (p_glob.x - x_0) / h_x - 1, 2 * (p_glob.y - y_0) / h_y - 1, 2 * (p_glob.z - z_0) / h_z - 1);
 }
 
-dyn_matrix cubeelement::get_local_matrix(double mu, double k_sq) {
+vector<dof_type> cubeelement::get_dofs() {
+	return dofs;
+}
+
+dyn_matrix cubeelement::get_local_matrix(double mu) {
 	dyn_matrix M;
 
 	M.resize(dofs_number);
+	double k_sq = 1.0;
 
 	for(int i = 0; i < dofs_number; i++) {
 		M[i].resize(dofs_number);
@@ -352,6 +358,19 @@ dyn_matrix cubeelement::get_local_matrix(double mu, double k_sq) {
 
 	return M;
 }
+
+vector<double> cubeelement::get_local_right_part(vfunc3d rp_func) {
+	vector<double> b;
+	b.resize(dofs_number);
+
+	for(int i = 0; i < dofs_number; i++)
+		b[i] = integrate([&](double x, double y, double z)->double {
+			return  rp_func(x,y,z) * vector_basis_v(i, x, y, z);
+	});
+
+	return b;
+}
+
 
 
 vec3d cubeelement::vector_basis_v(int i, double x, double y, double z) {
