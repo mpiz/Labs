@@ -1,0 +1,15 @@
+/МКЭА/lab2/Debug/lab2.ilk
+/МКЭА/lab2/Debug/lab2.pdb
+/МКЭА/lab2/Debug/lab2.exe
+*.tlog
+*.obj
+launch.obj
+/МКЭА/lab2/lab2/Debug/vc110.idb
+/МКЭА/lab2/lab2/Debug/vc110.pdb
+/МКЭА/lab2/lab2/Debug/VFEM_o2_t1_cube.obj
+/МКЭА/lab2/lab2/Debug/VFEM_o2_t1_quad.obj
+/МКЭА/lab2/lab2/Debug/*.tlog
+/МКЭА/lab2/lab2/Debug/link-rc.write.1.tlog
+/МКЭА/lab2/lab2/Debug/link-cvtres.write.1.tlog
+/МКЭА/lab2/lab2/Debug/link-rc.read.1.tlog
+/МКЭА/lab2/lab2/Debug/*.lastbuildstate
