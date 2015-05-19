@@ -2,8 +2,8 @@
 
 namespace integration_points {
 		
-		const double QUAD_7_a = sqrt((144.0-3.0*sqrt(583.0))/287.0);
-		const double QUAD_7_b = sqrt((144.0+3.0*sqrt(583.0))/287.0);
+		const double QUAD_7_a = sqrt((114.0-3.0*sqrt(583.0))/287.0);
+		const double QUAD_7_b = sqrt((114.0+3.0*sqrt(583.0))/287.0);
 		const double QUAD_7_c = sqrt(6.0 / 7.0);
 
 		const double QUAD_7_wa = 307.0 / 810.0 + 923.0 / (270.0 * sqrt(583.0));

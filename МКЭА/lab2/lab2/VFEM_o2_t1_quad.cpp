@@ -30,7 +30,7 @@ void VFEM_o2_t1_quad::calculate() {
 	vector<vfunc3d> eq_rp;
 	eq_rp.push_back(
 		[](double x, double y, double z)->vec3d {
-		return vec3d(x, 0, 0);	
+		return vec3d(1.0, 0, 0);	
 		}
 	);
 	generate_matrix_with_out_bound(eq_rp);
@@ -46,6 +46,20 @@ void VFEM_o2_t1_quad::calculate() {
 	solver.solve(rp[basis_i], solutions[basis_i]);
 
 
+}
+
+void VFEM_o2_t1_quad::output_weights(string file_name) {
+	ofstream outp_file(file_name.c_str());
+
+	for(int i = 0; i < local_dof_n; i++)
+		outp_file << i << "\t" << loc_to_glob[i] << "\t" <<solutions[0][i] << endl;
+
+	outp_file.close();
+
+}
+
+quadelement* VFEM_o2_t1_quad::find_element(point pn) {
+	return nullptr;
 }
 
 double VFEM_o2_t1_quad::get_lambda(quadelement& el){

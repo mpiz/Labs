@@ -21,7 +21,9 @@ template<typename elementT> class BaseElement {
 	 //virtual double vales(dof_type glob_dof_n, node pn) = 0;	// По глобальному номеру базисной функции и точке вычислем значение
 	// virtual double scalar_basis_v(dof_type loc_dof_n, node pn) = 0;	// По глобальному номеру базисной функции и точке вычислем значение
 
-	// virtual elementT* find_element(point pn) = 0;
+	 vec3d BaseElement<elementT>::value_element_vec(elementT* elem, point pn);
+
+	virtual elementT* find_element(point pn) = 0;
 
 	virtual double get_lambda(elementT& el) = 0;
 
@@ -194,6 +196,36 @@ template<typename elementT> double BaseElement<elementT>::value_element(elementT
 	
 }
 
+template<typename elementT> vec3d BaseElement<elementT>::value_element_vec(elementT* elem, point pn) {
+	if (elem == nullptr)
+		return vec3d(0, 0, 0);
+
+	auto local_dofs = elem->get_dofs();
+	int local_dofs_size = local_dofs.size();
+	vec3d value(0, 0, 0);
+
+#ifdef DEBUGOUTP
+	vector<vec3d> basis_vals;
+	vector<double> q_vals;
+	basis_vals.resize(local_dofs_size);
+	q_vals.resize(local_dofs_size);
+#endif
+
+	for(int i = 0; i < local_dofs_size; i++) {
+		vec3d basis_v = elem->vector_basis_v(i, pn.x, pn.y, pn.z);
+		double q_i = solutions[0][local_dofs[i]];
+		#ifdef DEBUGOUTP
+		basis_vals[i] = basis_v;
+		q_vals[i] = q_i;
+		#endif
+		value = value + q_i * basis_v;
+	}
+
+	return value;
+	
+}
+
+
 template<typename elementT> int BaseElement<elementT>::find_pos(int i, int j) {
 	if(j > i)
 		swap(i, j);
@@ -326,6 +358,8 @@ template<typename elementT> template<typename func_t> void BaseElement<elementT>
 		}
 	}
 
+
+	auto rp_v = rp[0];
 
 }
 

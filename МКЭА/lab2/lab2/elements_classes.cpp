@@ -1,17 +1,12 @@
 #include "elements_classes.h"
+#ifdef DEBUGOUTP
+#include <iostream>
+#endif
 
 
-// ========  Отрезки ========
-sector::sector() {
+const double mu0 = 16 * atan(1.0) * 1e-7;
+const double eps0 = 8.85418782 * 1e-12;
 
-}
-sector::sector(vector<node> nodes_s, vector<dof_type> s_dofs) {
-
-}
-
-double sector::L2_diff(func3d f, vector<double>& q_loc){
-	return 0;
-}
 
 // ======== Прямоугольники ========
 
@@ -237,7 +232,9 @@ dyn_matrix quadelement::get_local_matrix(double mu) {
 		M[i].resize(dofs_number);
 		for(int j = 0; j <= i; j++) {
 			M[i][j] = integrate([&](double x, double y, double z)->double {
-				return mu * vector_basis_v(i, x, y, z) * vector_basis_v(j, x, y, z);
+				vec3d v1 = vector_basis_v(i, x, y, z);
+				vec3d v2 = vector_basis_v(j, x, y, z);
+				return v1 * v2 ;
 			});
 			M[j][i] = M[i][j];
 		}
@@ -251,12 +248,14 @@ vector<double> quadelement::get_local_right_part(vfunc3d rp_func) {
 	vector<double> b;
 	b.resize(dofs_number);
 
-	for(int i = 0; i < dofs_number; i++)
+	for(int i = 0; i < dofs_number; i++) {
 		b[i] = integrate([&](double x, double y, double z)->double {
 			vec3d v = vector_basis_v(i, x, y, z);
 			vec3d r = rp_func(x,y,z);
+			double rs = r * v;
 			return  r * v;
-	});
+		});
+	}
 
 	return b;
 }
@@ -293,7 +292,7 @@ void cubeelement::init_coords() {
 
 	// Упорядочим все точки, сначала по z, потом по y, потом по x
 
-	// по z
+	/*// по z
 	sort(node_array.begin(), node_array.end(), [](node& a, node& b)->bool {	return a.z > b.z;});
 	// по y
 	auto y_border1 = node_array.begin()+3;
@@ -304,7 +303,7 @@ void cubeelement::init_coords() {
 	// по x
 	for (auto x_b = node_array.end(); x_b != node_array.end(); x_b += 2) {
 		sort(x_b, x_b+1, [](node& a, node& b)->bool { return a.x > b.x;});
-	}
+	}*/
 
 	//Вычисляем шаги и начальную точку
 	x_0 = node_array[0].x;
@@ -355,16 +354,18 @@ dyn_matrix cubeelement::get_local_matrix(double mu) {
 	dyn_matrix M;
 
 	M.resize(dofs_number);
-	double k_sq = -1.0;
+	double k_sq = -1.8e6 * eps0;
+	mu /= mu0;
 
 	for(int i = 0; i < dofs_number; i++) {
 		M[i].resize(dofs_number);
+
 		for(int j = 0; j <= i; j++) {
 			M[i][j] = integrate([&](double x, double y, double z)->double {
 				vec3d m1 = vector_basis_v(i, x, y, z);
 				vec3d m2 = vector_basis_v(j, x, y, z);
 				vec3d g1 = vector_basis_rot_v(i, x, y, z);
-				vec3d g2 = vector_basis_rot_v(i, x, y, z);
+				vec3d g2 = vector_basis_rot_v(j, x, y, z);
 
 				return mu * g1 * g2 - k_sq * m1 * m2;
 			});
@@ -561,7 +562,7 @@ vec3d cubeelement::vector_basis_rot_v(int i, double x, double y, double z) {
 
 	values["ksi_+d"] =  1.0 / h_x;
 	values["ksi_-d"] =  -1.0 / h_x;
-	values["ksi_2d"] = -2*ksi / h_x;
+	values["ksi_2d"] = -4.0*ksi / h_x;
 
 	values["etta_+"] = (1 + etta)/2;
 	values["etta_-"] = (1 - etta)/2;
@@ -569,7 +570,7 @@ vec3d cubeelement::vector_basis_rot_v(int i, double x, double y, double z) {
 
 	values["etta_+d"] = 1.0 / h_y;
 	values["etta_-d"] = -1.0 / h_y;
-	values["etta_2d"] = -2 * etta / h_y;
+	values["etta_2d"] = -4.0 * etta / h_y;
 
 	values["dzeta_+"] = (1 + dzeta)/2;
 	values["dzeta_-"] = (1 - dzeta)/2;
@@ -577,7 +578,7 @@ vec3d cubeelement::vector_basis_rot_v(int i, double x, double y, double z) {
 
 	values["dzeta_+d"] = 1.0 / h_z;
 	values["dzeta_-d"] = -1.0 / h_z;
-	values["dzeta_2d"] = -2.0 * dzeta / h_z;
+	values["dzeta_2d"] = -4.0 * dzeta / h_z;
 
 #define phi(x, b) values[#x"_"#b] 
 #define dphi(x, b) values[#x"_"#b"d"] 
@@ -598,18 +599,20 @@ vec3d cubeelement::vector_basis_rot_v(int i, double x, double y, double z) {
 		case 3:
 			val = vec3d(0, phi(etta, +)*dphi(dzeta, +), -dphi(etta, +)*phi(dzeta, +));
 			break;
+
 		case 4:
-			val = vec3d(-phi(ksi, -) * dphi(dzeta, -), 0, dphi(ksi, -) * dphi(dzeta, -));
+			val = vec3d(-phi(ksi, -) * dphi(dzeta, -), 0, dphi(ksi, -) * phi(dzeta, -));
 			break;
 		case 5:
-			val = vec3d(-phi(ksi, +) * dphi(dzeta, -), 0, dphi(ksi, +) * dphi(dzeta, -));
+			val = vec3d(-phi(ksi, +) * dphi(dzeta, -), 0, dphi(ksi, +) * phi(dzeta, -));
 			break;
 		case 6:
-			val = vec3d(-phi(ksi, -) * dphi(dzeta, +), 0, dphi(ksi, -) * dphi(dzeta, +));
+			val = vec3d(-phi(ksi, -) * dphi(dzeta, +), 0, dphi(ksi, -) * phi(dzeta, +));
 			break;
 		case 7:
-			val = vec3d(-phi(ksi, +) * dphi(dzeta, +), 0, dphi(ksi, +) * dphi(dzeta, +));
+			val = vec3d(-phi(ksi, +) * dphi(dzeta, +), 0, dphi(ksi, +) * phi(dzeta, +));
 			break;
+
 		case 8:
 			val = vec3d(phi(ksi, -) * dphi(etta, -), -dphi(ksi, -) * phi(etta, -), 0);
 			break;
@@ -637,16 +640,16 @@ vec3d cubeelement::vector_basis_rot_v(int i, double x, double y, double z) {
 			val = ksi * vec3d(0, phi(etta, +)*dphi(dzeta, +), -dphi(etta, +)*phi(dzeta, +));
 			break;
 		case 16:
-			val = etta * vec3d(-phi(ksi, -) * dphi(dzeta, -), 0, dphi(ksi, -) * dphi(dzeta, -));
+			val = etta * vec3d(-phi(ksi, -) * dphi(dzeta, -), 0, dphi(ksi, -) * phi(dzeta, -));
 			break;
 		case 17:
-			val = etta * vec3d(-phi(ksi, +) * dphi(dzeta, -), 0, dphi(ksi, +) * dphi(dzeta, -));
+			val = etta * vec3d(-phi(ksi, +) * dphi(dzeta, -), 0, dphi(ksi, +) * phi(dzeta, -));
 			break;
 		case 18:
-			val = etta * vec3d(-phi(ksi, -) * dphi(dzeta, +), 0, dphi(ksi, -) * dphi(dzeta, +));
+			val = etta * vec3d(-phi(ksi, -) * dphi(dzeta, +), 0, dphi(ksi, -) * phi(dzeta, +));
 			break;
 		case 19:
-			val = etta * vec3d(-phi(ksi, +) * dphi(dzeta, +), 0, dphi(ksi, +) * dphi(dzeta, +));
+			val = etta * vec3d(-phi(ksi, +) * dphi(dzeta, +), 0, dphi(ksi, +) * phi(dzeta, +));
 			break;
 		case 20:
 			val = dzeta * vec3d(phi(ksi, -) * dphi(etta, -), -dphi(ksi, -) * phi(etta, -), 0);
@@ -717,389 +720,10 @@ vec3d cubeelement::vector_basis_rot_v(int i, double x, double y, double z) {
 
 }
 
-/*double quadelement::L2_diff(func3d f, vector<double>& q_loc){
-
-	int loc_n = q_loc.size();
-
-	double res = integrate([&](double x, double y, double z){
-		double u = 0;
-		for (int i = 0; i < loc_n; i++) {
-			u += q_loc[i] * (this->*scalar_basis[i])(x, y, z);
-		}
-
-		double f_v = f(x, y, z);
-		return (u - f_v)*(u - f_v);
-	});
-
-	return 0;
-}
-
-double trelement::vector_jump_L2(vfunc3d f1, vfunc3d f2) {
-	return integrate([&](double x, double y, double z)->double {
-		vec3d f1_v = f1(x,y,z);
-		vec3d f2_v = f2(x,y,z);
-		double diff = (f1_v - f2_v)*normal_vector;
-
-		return diff*diff;
-	});
-}
-*/
-
-
-// ======== Тетраэдры ========
-/*
-tetelement::tetelement() {
-}
-
-tetelement::tetelement(vector<node> nodes_s, vector<dof_type> s_dofs) {
-	node_array[0] = nodes_s[0];
-	node_array[1] = nodes_s[1];
-	node_array[2] = nodes_s[2];
-	node_array[3] = nodes_s[3];
-
-	dofs = s_dofs;
-	dofs_number = dofs.size();
-
-	init_coords();
-}
-
-int& tetelement::operator [] (int i) {
-	return edge_array[i];
-}
-
-
-int tetelement::get_ph_area() {
-	return ph_area;
-}
-
-void tetelement::set_ph_area(int sph_area) {
-	ph_area = sph_area;
-}
-
-node tetelement::get_local_node(int i) {
-	return node_array[i];
-}
-
-point tetelement::get_center() {
-	point cent(0, 0, 0);
-	for(int i = 0; i < 3; i++)
-		for(int j = 0; j < 4; j++)
-			cent[i] += node_array[j][i] / 4.0;
-
-	return cent;
-
-}
-
-double tetelement::scalar_basis_v(int i, double x, double y, double z) {
-	return (this->*scalar_basis[i])(x,y,z); 
-}
-
-vec3d tetelement::scalar_basis_grad_v(int i, double x, double y, double z) {
-	return (this->*scalar_basis_grad[i])(x,y,z); 
-}
-
-vector<dof_type> tetelement::get_dofs() {
-	return dofs;
-}
-
-
-bool tetelement::in_element(double x, double y, double z) {
-	point p_glob(x,y,z);
-
-#ifdef DEBUGOUTP
-	array<double, 4> lambdas;
-	for(int i = 0; i < 4; i++) {
-		lambdas[i] = lambda(i, p_glob);
-	}
-	for(int i = 0; i < 4; i++) {
-		if(lambdas[i] > 1 + GEOCONST|| lambdas[i] < 0 - GEOCONST)
-			return false;
-	}
-#else
-	for(int i = 0; i < 4; i++) {
-		double L = lambda(i, p_glob);
-		if(L > 1 + GEOCONST|| L < 0 - GEOCONST)
-			return false;
-	}
-#endif
-
-	return true;
-
-}
-bool tetelement::valid_for_tree_node(double x0, double x1, double y0, double y1, double z0, double z1) {
-
-	//Проерка на характеристические точки в том числе, если тетраэдр лежит внутри куба (ну вытянутого)
-	for(int i = 0; i < 5; i++)
-		if(ch_points[i][0] >= x0 && ch_points[i][0] <= x1 && ch_points[i][1] >= y0 && ch_points[i][1] <= y1 && ch_points[i][2] >= z0 && ch_points[i][2] <= z1)
-			return true;
-
-	//Куб лежит внутри тэтраэдра (хотя бы частично)
-	if(in_element(x0, y0, z0) || in_element(x1, y0, z0) || in_element(x0, y1, z0) || in_element(x1, y1, z0) ||
-		in_element(x0, y0, z1) || in_element(x1, y0, z1) || in_element(x0, y1, z1) || in_element(x1, y1, z1))
-		return true;
-
-	//Самое весёлое - куб пересекает тэтраэдр
-	double t[6][6]; //параметры прямых для всех прямых (6) и всех плоскостей (6)
-	double cords_t[6][6][3]; //прямая, плоскость, координата
-
-	for(int i = 0; i < 6; i++) {
-		t[i][0] = (x0 - edges_b[i][0]) / edges_a[i][0]; // x = x0
-		t[i][1] = (x1 - edges_b[i][0]) / edges_a[i][0]; // x = x1
-
-		t[i][2] = (y0 - edges_b[i][1]) / edges_a[i][1]; // y = y0
-		t[i][3] = (y1 - edges_b[i][1]) / edges_a[i][1]; // y = y1
-
-		t[i][4] = (z0 - edges_b[i][2]) / edges_a[i][2]; // z = z0
-		t[i][5] = (z1 - edges_b[i][2]) / edges_a[i][2]; // z = z1
-
-	}
+bool cubeelement::in_element(point pn) {
+	return
+		pn.x >= x_0 && pn.x <= node_array[7].x &&
+		pn.y >= y_0 && pn.x <= node_array[7].y &&
+		pn.z >= x_0 && pn.z <= node_array[7].z;
 	
-	for(int i = 0; i < 6; i++)
-		for(int j = 0; j < 6; j++) 
-			for(int k = 0; k < 3; k++) 
-				cords_t[i][j][k] = edges_a[i][k] * t[i][j] + edges_b[i][k];
-
-	for(int i = 0; i < 6; i++) { //берём прямоую и проверяем, что пересечение с плоскостью попадает в раcсматриваемый отрезок прямой и в рассатриваемую часть плоскости
-
-		if(	   t[i][0] >= 0 && t[i][0] <= 1 && cords_t[i][0][1] >= y0 && cords_t[i][0][1] >= y1 && cords_t[i][0][2] >= z0 && cords_t[i][0][2] <= z1	// x = x0
-			|| t[i][1] >= 0 && t[i][1] <= 1 && cords_t[i][1][1] >= y0 && cords_t[i][1][1] >= y1 && cords_t[i][1][2] >= z0 && cords_t[i][1][2] <= z1 // x = x1
-			|| t[i][2] >= 0 && t[i][2] <= 1 && cords_t[i][2][0] >= x0 && cords_t[i][2][0] <= x1 && cords_t[i][2][2] >= z0 && cords_t[i][2][2] <= z1 // y = y0
-			|| t[i][3] >= 0 && t[i][3] <= 1 && cords_t[i][3][0] >= x0 && cords_t[i][3][0] <= x1 && cords_t[i][3][2] >= z0 && cords_t[i][3][2] <= z1 // y = y1
-			|| t[i][4] >= 0 && t[i][4] <= 1 && cords_t[i][4][0] >= x0 && cords_t[i][4][0] <= x1 && cords_t[i][4][1] >= y0 && cords_t[i][4][1] <= y1 // z = z0
-			|| t[i][5] >= 0 && t[i][5] <= 1 && cords_t[i][5][0] >= x0 && cords_t[i][5][0] <= x1 && cords_t[i][5][1] >= y0 && cords_t[i][5][1] <= y1 // z = z1
-			)
-			return true;
-
-
-	}
-
-
-	return false;
-
 }
-
-void tetelement::init_coords() {
-
-	
-
-	//расчёт L-координат
-	for(int i = 0; i < 4; i++)
-		for(int j = 0; j < 3; j++)
-			D_matrix[j][i] = node_array[i][j];
-
-	for(int i = 0; i < 4; i++)
-		D_matrix[3][i] = 1;
-
-	L_cord_matrix = inverse4(D_matrix, det_D);
-
-	jacobian = fabs(det_D);
-
-	//Точки Гаусса на мастер-элементе
-	double gauss_a = (5.0 - sqrt(5.0)) / 20.0;
-	double gauss_b = (5.0 + 3.0*sqrt(5.0)) / 20.0;
-
-	double Gauss_cord[4][4];
-	double Gauss_cord_gl[4][4];
-
-	//i-й столбец, i-я точка
-
-	Gauss_cord[0][0] = 1 - gauss_b - 2*gauss_a;
-	Gauss_cord[1][0] = gauss_b;
-	Gauss_cord[2][0] = Gauss_cord[3][0] = gauss_a;
-
-	Gauss_cord[0][1] = 1 - gauss_b - 2*gauss_a;
-	Gauss_cord[1][1] = Gauss_cord[3][1] = gauss_a;
-	Gauss_cord[2][1] = gauss_b;
-
-	Gauss_cord[0][2] = 1 - gauss_b - 2*gauss_a;
-	Gauss_cord[1][2] = Gauss_cord[2][2] = gauss_a;
-	Gauss_cord[3][2] = gauss_b;
-
-	Gauss_cord[0][3] = 1 - 3*gauss_a;
-	Gauss_cord[1][3] = Gauss_cord[2][3] = Gauss_cord[3][3] = gauss_a;
-
-	//Перевод на текущий тетраэдр
-
-	for(int i = 0; i < 4; i++) {
-		for(int j = 0 ; j < gauss_points_tet; j++) {
-			Gauss_cord_gl[i][j] = 0;
-			for(int k = 0; k < 4; k++)
-				Gauss_cord_gl[i][j] += D_matrix[i][k] * Gauss_cord[k][j];
-		}
-	}
-
-	for(int i = 0; i < 4; i++)
-		for(int j = 0; j < 3; j++)
-			gauss_points[i][j] = Gauss_cord_gl[j][i];
-
-	for(int i = 0; i < gauss_points_tet; i++)
-		gauss_weights[i] = 1.0 / 24.0;
-
-	//Ниже - для данные для построения дерева поиска
-
-	for(int i = 0; i < 3; i++) {
-		ch_points[0][i] = 0;
-		for(int j = 0; j < 4; j++)
-			ch_points[0][i] += node_array[j][i] / 4.0;
-	}
-
-	for(int i = 0; i < 4; i++)
-		for(int j = 0; j < 3; j++)
-			ch_points[i+1][j] = node_array[i][j];
-
-	//Представление прямых тетраэдра в параметричком виде a*t + b, сам отрезок - ребо получается при 0<=t<=1
-	//Нужно для дерева поиска
-
-	for(int i = 0; i < 3; i++) {
-		edges_a[0][i] = node_array[1][i] - node_array[0][i];
-		edges_b[0][i] = node_array[0][i];
-
-		edges_a[1][i] = node_array[2][i] - node_array[0][i];
-		edges_b[1][i] = node_array[0][i];
-
-		edges_a[2][i] = node_array[3][i] - node_array[0][i];
-		edges_b[2][i] = node_array[0][i];
-
-		edges_a[3][i] = node_array[2][i] - node_array[1][i];
-		edges_b[3][i] = node_array[1][i];
-
-		edges_a[4][i] = node_array[3][i] - node_array[1][i];
-		edges_b[4][i] = node_array[1][i];
-
-		edges_a[5][i] = node_array[3][i] - node_array[2][i];
-		edges_b[5][i] = node_array[2][i];
-
-	}
-
-	
-	//Формирование базиса в виде массива функций
-	scalar_basis.push_back(&tetelement::basis_1);
-	scalar_basis.push_back(&tetelement::basis_2);
-	scalar_basis.push_back(&tetelement::basis_3);
-	scalar_basis.push_back(&tetelement::basis_4);
-
-	scalar_basis_grad.push_back(&tetelement::grad_basis_1);
-	scalar_basis_grad.push_back(&tetelement::grad_basis_2);
-	scalar_basis_grad.push_back(&tetelement::grad_basis_3);
-	scalar_basis_grad.push_back(&tetelement::grad_basis_4);
-
-	scalar_basis.resize(dofs_number);
-	scalar_basis_grad.resize(dofs_number);
-
-}
-
-double tetelement::lambda(int i, point p_glob) {
-
-	double res = L_cord_matrix[i][3];
-	for(int j = 0; j < 3; j++)
-		res += L_cord_matrix[i][j] * p_glob[j];
-
-	return res;
-
-}
-
-vec3d tetelement::grad_lambda(int i) {
-	return vec3d(L_cord_matrix[i][0], L_cord_matrix[i][1], L_cord_matrix[i][2]);
-}
-
-double tetelement::integrate(func3d integ_func) {
-
-	double res = 0;
-	for(int i = 0; i < gauss_points_tet; i++) {
-		double func_v = integ_func(gauss_points[i].x, gauss_points[i].y, gauss_points[i].z);
-		res += gauss_weights[i] * func_v;
-	}
-
-	res *= jacobian;
-
-	return res;
-
-}
-
-dyn_matrix tetelement::get_local_matrix(double mu) {
-	dyn_matrix A_loc;
-	A_loc.resize(dofs_number);
-
-	for(int i = 0; i < dofs_number; i++) {
-		A_loc[i].resize(dofs_number);
-		for(int j = 0; j <= i; j++) {
-			A_loc[i][j] += integrate([&](double x, double y, double z)->double {
-				return mu * (this->*scalar_basis_grad[i])(x,y,z) * (this->*scalar_basis_grad[j])(x,y,z);
-			});
-			A_loc[j][i] = A_loc[i][j];
-		}
-	}
-
-	return A_loc; 
-}
-
-
-vector<double> tetelement::get_local_right_part(func3d rp_func) {
-	vector<double> b_loc;
-	b_loc.resize(dofs_number);
-
-	for(int i = 0; i < dofs_number; i++)
-		b_loc[i] = integrate([&](double x, double y, double z)->double{
-			return rp_func(x,y,z) * (this->*scalar_basis[i])(x,y,z);
-	});
-
-	return b_loc;
-}
-
-double tetelement::L2_diff(func3d f, vector<double>& q_loc, vector<double>& q_virtual){
-
-	int loc_n = q_loc.size();
-	int virt_n = q_virtual.size();
-
-	double res = integrate([&](double x, double y, double z){
-		double u = 0;
-		for (int j = 0; j < loc_n; j++) {
-			double basis_v = (this->*scalar_basis[j])(x, y, z);
-			double q_v = 0;
-			for (int i = 0; i < virt_n; i++) {
-				q_v += q_virtual[i] * q_loc[j];
-			}
-			u += q_v * basis_v;
-		}
-
-		double f_v = f(x, y, z);
-		return (u - f_v)*(u - f_v);
-	});
-
-	return res;
-}
-
-
-// == Базисные функции ==
-
-double tetelement::basis_1(double x, double y, double z) {
-	return lambda(0, point(x,y,z));
-}
-
-double tetelement::basis_2(double x, double y, double z) {
-	return lambda(1, point(x,y,z));
-}
-
-double tetelement::basis_3(double x, double y, double z) {
-	return lambda(2, point(x,y,z));
-}
-
-double tetelement::basis_4(double x, double y, double z) {
-	return lambda(3, point(x,y,z));
-}
-
-vec3d tetelement::grad_basis_1(double x, double y, double z) {
-	return grad_lambda(0);
-}
-
-vec3d tetelement::grad_basis_2(double x, double y, double z) {
-	return grad_lambda(1);
-}
-
-vec3d tetelement::grad_basis_3(double x, double y, double z) {
-	return grad_lambda(2);
-}
-
-vec3d tetelement::grad_basis_4(double x, double y, double z) {
-	return grad_lambda(3);
-}*/

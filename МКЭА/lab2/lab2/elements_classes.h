@@ -13,33 +13,8 @@ typedef function<vec3d(double, double, double)> vfunc3d;
 const int gauss_points_tr = 3;
 const int gauss_points_tet = 4;
 
-class trelement;
-class tetelement;
 class quadelement;
 
-typedef double (trelement::*tr_bfunc)(double x, double y, double z);
-typedef vec3d (trelement::*tr_vbfunc)(double x, double y, double z);
-typedef double (tetelement::*tet_bfunc)(double x, double y, double z);
-typedef vec3d (tetelement::*tet_vbfunc)(double x, double y, double z);
-
-
-
-class sector {
-public:
-
-	 sector();
-	 sector(vector<node> nodes_s, vector<dof_type> s_dofs);
-
-	int& operator [] (int i); //получить i-ую степень свободы
-
-	static const int element_nodes = 2;
-
-	double L2_diff(func3d f, vector<double>& q_loc);
-private:
-	vector<node> nodes;
-	vector<int> dofs;
-
-};
 
 class quadelement {
  public:
@@ -112,6 +87,8 @@ class cubeelement {
 	  vec3d vector_basis_rot_v(int i, double x, double y, double z);
 
 	  vector<dof_type> get_dofs();
+
+	  bool in_element(point pn);
  private:
 
 	 void init_coords();

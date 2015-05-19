@@ -1,5 +1,7 @@
 #include "VFEM_o2_t1_cube.h"
 
+const double eps0 = 8.85418782 * 1e-12;
+
 VFEM_o2_t1_cube:: VFEM_o2_t1_cube() : BaseElement() {
 	dofs_n = 1;
 	local_dof_n = 0;
@@ -152,9 +154,9 @@ void VFEM_o2_t1_cube::create_bound_element(vector<int>& nodes_numbs, int el_i) {
 	vector<dof_type> el_dofs;
 
 	static const int edge_nums[el_edges_n][2] = {
-		//Вдоль OX
+		//Вдоль OY
 		{0, 2}, {1, 3},
-		//Вдоль OY	
+		//Вдоль OX	
 		{0, 1}, {2, 3}
 	};
 
@@ -258,7 +260,7 @@ void VFEM_o2_t1_cube::calculate() {
 	vector<vfunc3d> rps;
 	rps.push_back(
 		[](double x, double y, double z)->vec3d{
-			return vec3d(0, 0, 0);
+			return 1e8*eps0 * vec3d(1.0, 0, 0);
 		}
 	);
 
@@ -267,6 +269,14 @@ void VFEM_o2_t1_cube::calculate() {
 
 	// Учёт первых краевых
 	int basis_i = 0;
+
+
+#ifdef DEBUGOUTP
+	auto rp_v = rp[basis_i];
+	auto sol = solutions[basis_i];
+
+	output_matrix("matrix_before.txt");
+#endif
 
 	for(int k = 0; k < first_bound_n; k++)	{
 		int cur_row = first_bound_dofs[k];
@@ -292,17 +302,54 @@ void VFEM_o2_t1_cube::calculate() {
 		}
 	}
 
-
 #ifdef DEBUGOUTP
-	auto rp_v = rp[basis_i];
-	auto sol = solutions[basis_i];
+	output_matrix("matrix_after.txt");
 #endif
 
 	solver.init(&gi.front(), &gj.front(), &di.front(), &gg.front(), local_dof_n);
 	solver.solve(rp[basis_i], solutions[basis_i]);
+
+	point p1(0.8, 0.8, 0.8);
+	auto res = value_element_vec(find_element(p1), p1);
 }
 
-void VFEM_o2_t1_cube::output_weights(string file_name) {
+
+void VFEM_o2_t1_cube::output_matrix(string file_name) {
+	dyn_matrix A_full;
+	A_full.resize(local_dof_n);
+
+	for (size_t i = 0; i < local_dof_n; i++) {
+		A_full[i].resize(local_dof_n + 1);
+		for (int j = 0; j < local_dof_n; j++)
+			A_full[i][j] = 0;
+	}
+
+	for (size_t i = 0; i < local_dof_n; i++) {
+		for (size_t k = gi[i]; k < gi[i + 1]; k++)
+		{
+			A_full[i][gj[k]] = gg[k];
+			A_full[gj[k]][i] = gg[k];
+		}
+		A_full[i][i] = di[i];
+		A_full[i][local_dof_n] = rp[0][i];
+	}
+
+	ofstream outp_m(file_name.c_str());
+	for (int i = 0; i < local_dof_n; i++) {
+		for (int j = 0; j <= local_dof_n; j++) {
+			outp_m << A_full[i][j];
+			if (j != local_dof_n)
+				outp_m << "\t";
+		}
+		outp_m << endl;
+
+	}
+
+	outp_m.close();
+
+}
+
+void VFEM_o2_t1_cube::output_weights(string file_name, string file_bound) {
 	ofstream outp_file(file_name.c_str());
 
 	for(int i = 0; i < local_dof_n; i++)
@@ -310,8 +357,19 @@ void VFEM_o2_t1_cube::output_weights(string file_name) {
 
 	outp_file.close();
 
+	boundory_method.output_weights(file_bound);
+
 }
 
+
+cubeelement* VFEM_o2_t1_cube::find_element(point pn) {
+	for(int i = 0; i < elements_n; i++)
+		if (elements[i].in_element(pn)) 
+			return &elements[i];
+
+	return nullptr;
+}
+	
 double VFEM_o2_t1_cube::get_lambda(cubeelement& el){
 	return 1.0;
 }

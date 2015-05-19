@@ -28,10 +28,11 @@ void CGM::init(int *gi_s, int *gj_s, double *di_s, double *gg_s, int n_s){
 		L_gg[i] = gg[i];
 
 	make_LLT_decomposition();
+
 }
 
 void CGM::make_LLT_decomposition(){
-
+	/*
 	double sum_d, sum_l;
 
 	for(int k = 0; k < n ; k++){
@@ -61,7 +62,12 @@ void CGM::make_LLT_decomposition(){
 			throw "Ошибка в разложении матрицы";
 		L_di[k] = sqrt(L_di[k] - sum_d);
 
-	}
+	}*/
+
+	for(int i = 0; i < n; i++)
+		L_di[i] = 1.0;
+	for(int i = 0; i < gi[n]; i++)
+		L_gg[i] = 0;
 }
 
 double CGM::dot_prod(double *a, double *b){
@@ -118,7 +124,7 @@ void CGM::solve(double *rp_s, double *&solution){
 	rp = rp_s;
 
 	// Параметры решателя
-	int max_iter = 1000;
+	int max_iter = 300000;
 	double eps = 1E-20;
 
 	mul_matrix(x0, r);
@@ -142,7 +148,7 @@ void CGM::solve(double *rp_s, double *&solution){
 	for(int iter = 0; iter < max_iter && !end; iter++){
 
 		discr = sqrt(dot_prod(r,r));
-//		printf("%d\t%.3e\n", iter, discr/rp_norm);
+		printf("%d\t%.3e\n", iter, discr/rp_norm);
 		if(eps < discr/rp_norm){
 
 			mul_matrix(z, s);
