@@ -40,6 +40,7 @@ void VFEM_o2_t1_quad::calculate() {
 #ifdef DEBUGOUTP
 	auto rp_v = rp[basis_i];
 	auto sol = solutions[basis_i];
+	output_matrix("bound_matrix.txt");
 #endif
 
 	solver.init(&gi.front(), &gj.front(), &di.front(), &gg.front(), local_dof_n);

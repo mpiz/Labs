@@ -15,7 +15,6 @@ class VFEM_o2_t1_cube: public BaseElement<cubeelement> {
 	void calculate();
 
 	void output_weights(string file_name, string file_bound);
-	void output_matrix(string file_name);
 
 	cubeelement* find_element(point pn);
 

@@ -1,8 +1,13 @@
-﻿Построение начато 19.05.2015 21:07:52.
+﻿Построение начато 19.05.2015 22:06:38.
      1>Проект "C:\Для Git\Labs\МКЭА\lab2\lab2\lab2.vcxproj" в узле 2 (целевые объекты Build).
      1>ClCompile:
-         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W0 /WX- /sdl /Od /Oy- /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt launch.cpp
+         C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W0 /WX- /sdl /Od /Oy- /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt CGM.cpp VFEM_o2_t1_cube.cpp VFEM_o2_t1_quad.cpp elements_classes.cpp launch.cpp
          launch.cpp
+         elements_classes.cpp
+         VFEM_o2_t1_quad.cpp
+         VFEM_o2_t1_cube.cpp
+         CGM.cpp
+         Создание кода...
        Link:
          C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Для Git\Labs\МКЭА\lab2\Debug\lab2.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Для Git\Labs\МКЭА\lab2\Debug\lab2.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Для Git\Labs\МКЭА\lab2\Debug\lab2.lib" /MACHINE:X86 Debug\CGM.obj
          Debug\elements_classes.obj
@@ -17,4 +22,4 @@
 
 Построение успешно завершено.
 
-Затраченное время: 00:00:01.69
+Затраченное время: 00:00:06.19

@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <iostream>
+#include <string>
 
 
 template<typename elementT> class BaseElement {
@@ -47,6 +48,7 @@ template<typename elementT> class BaseElement {
 	 int& operator [] (int loc_n);
 
 	 void set_virtual_solution(vector<double>& virt_sol);
+	 void output_matrix(string file_name);
 	// void set_virtual_solution_to_elements();
 
  protected:
@@ -194,6 +196,42 @@ template<typename elementT> double BaseElement<elementT>::value_element(elementT
 
 	return value;
 	
+}
+
+
+template<typename elementT> void BaseElement<elementT>::output_matrix(string file_name) {
+	dyn_matrix A_full;
+	A_full.resize(local_dof_n);
+
+	for (size_t i = 0; i < local_dof_n; i++) {
+		A_full[i].resize(local_dof_n + 1);
+		for (int j = 0; j < local_dof_n; j++)
+			A_full[i][j] = 0;
+	}
+
+	for (size_t i = 0; i < local_dof_n; i++) {
+		for (size_t k = gi[i]; k < gi[i + 1]; k++)
+		{
+			A_full[i][gj[k]] = gg[k];
+			A_full[gj[k]][i] = gg[k];
+		}
+		A_full[i][i] = di[i];
+		A_full[i][local_dof_n] = rp[0][i];
+	}
+
+	ofstream outp_m(file_name.c_str());
+	for (int i = 0; i < local_dof_n; i++) {
+		for (int j = 0; j <= local_dof_n; j++) {
+			outp_m << A_full[i][j];
+			if (j != local_dof_n)
+				outp_m << "\t";
+		}
+		outp_m << endl;
+
+	}
+
+	outp_m.close();
+
 }
 
 template<typename elementT> vec3d BaseElement<elementT>::value_element_vec(elementT* elem, point pn) {

@@ -354,7 +354,7 @@ dyn_matrix cubeelement::get_local_matrix(double mu) {
 	dyn_matrix M;
 
 	M.resize(dofs_number);
-	double k_sq = -1.8e6 * eps0;
+	double k_sq = -1e8 * eps0;
 	mu /= mu0;
 
 	for(int i = 0; i < dofs_number; i++) {
@@ -451,7 +451,7 @@ vec3d cubeelement::vector_basis_v(int i, double x, double y, double z) {
 			val = vec3d(0, 0, phi(ksi, -) * phi(etta, +));
 			break;
 		case 11:
-			val = vec3d(0, 0, phi(ksi, +) * phi(etta, -));
+			val = vec3d(0, 0, phi(ksi, +) * phi(etta, +));
 			break;
 
 		// Первый порядок, второй тип
@@ -489,7 +489,7 @@ vec3d cubeelement::vector_basis_v(int i, double x, double y, double z) {
 			val = dzeta *vec3d(0, 0, phi(ksi, -) * phi(etta, +));
 			break;
 		case 23:
-			val = dzeta *vec3d(0, 0, phi(ksi, +) * phi(etta, -));
+			val = dzeta *vec3d(0, 0, phi(ksi, +) * phi(etta, +));
 			break;
 
 		// Второй порядок, первый тип
