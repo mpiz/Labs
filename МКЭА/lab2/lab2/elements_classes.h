@@ -57,6 +57,7 @@ class quadelement {
 	  vector<dof_type> get_dofs();
 
 	  void renumerate_dofs(map<dof_type, dof_type>& glob_to_loc);
+
  private:
 
 	 void init_coords();
@@ -84,6 +85,8 @@ class quadelement {
 
 	 double get_u(double x, double y, double z);
 	 double get_v(double x, double y, double z);
+
+	 vec3d mull_transT(vec3d v);
 
 	 int gauss_points_n;
 	 vector<point> gauss_points; //точки для интегрирования по Гауссу

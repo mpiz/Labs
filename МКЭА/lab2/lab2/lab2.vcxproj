@@ -41,9 +41,10 @@
   <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -56,6 +57,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -67,6 +69,7 @@
     <ClInclude Include="BaseElement.h" />
     <ClInclude Include="CGM.h" />
     <ClInclude Include="elements_classes.h" />
+    <ClInclude Include="gen_grid.h" />
     <ClInclude Include="geom_classes.h" />
     <ClInclude Include="integration_points.h" />
     <ClInclude Include="macro.h" />
@@ -76,11 +79,17 @@
   <ItemGroup>
     <ClCompile Include="CGM.cpp" />
     <ClCompile Include="elements_classes.cpp" />
+    <ClCompile Include="gen_grid.cpp" />
     <ClCompile Include="geom_classes.cpp" />
     <ClCompile Include="integration_points.cpp" />
     <ClCompile Include="launch.cpp" />
     <ClCompile Include="VFEM_o2_t1_cube.cpp" />
     <ClCompile Include="VFEM_o2_t1_quad.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="data_subseg_x.txt" />
+    <Text Include="data_subseg_y.txt" />
+    <Text Include="data_subseg_z3D.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

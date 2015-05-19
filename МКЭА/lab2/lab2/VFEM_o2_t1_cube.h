@@ -14,6 +14,8 @@ class VFEM_o2_t1_cube: public BaseElement<cubeelement> {
 
 	void calculate();
 
+	void output_weights(string file_name);
+
  private:
 
 	dof_type get_dof_number(vector<node>& el_nodes);

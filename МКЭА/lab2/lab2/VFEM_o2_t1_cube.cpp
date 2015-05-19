@@ -1,7 +1,7 @@
 #include "VFEM_o2_t1_cube.h"
 
 VFEM_o2_t1_cube:: VFEM_o2_t1_cube() : BaseElement() {
-	dofs_n = 0;
+	dofs_n = 1;
 	local_dof_n = 0;
 	cur_edge_count = 0;
 	cur_face_count = 0;
@@ -223,6 +223,7 @@ void VFEM_o2_t1_cube::input_bound(string file_elements) {
 	ifstream inp_bound(file_elements.c_str());
 
 	inp_bound >> first_bound_elements_n;
+	bound_faces.resize(first_bound_elements_n);
 
 	vector<int> el_nodes;
 	el_nodes.resize(4);
@@ -291,9 +292,26 @@ void VFEM_o2_t1_cube::calculate() {
 		}
 	}
 
+
+#ifdef DEBUGOUTP
+	auto rp_v = rp[basis_i];
+	auto sol = solutions[basis_i];
+#endif
+
+	solver.init(&gi.front(), &gj.front(), &di.front(), &gg.front(), local_dof_n);
+	solver.solve(rp[basis_i], solutions[basis_i]);
+}
+
+void VFEM_o2_t1_cube::output_weights(string file_name) {
+	ofstream outp_file(file_name.c_str());
+
+	for(int i = 0; i < local_dof_n; i++)
+		outp_file << solutions[0][i] << endl;
+
+	outp_file.close();
+
 }
 
 double VFEM_o2_t1_cube::get_lambda(cubeelement& el){
 	return 1.0;
 }
-

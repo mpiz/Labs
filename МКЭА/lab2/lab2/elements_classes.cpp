@@ -71,6 +71,8 @@ void quadelement::init_coords() {
 	double* weights;
 	get_quadrature_rule(ELEM_TYPE::QUAD, 7, points, weights, gauss_points_n);
 
+	jacobian = h_u * h_v / 4.0;
+
 	gauss_points.resize(gauss_points_n);
 	gauss_points_global.resize(gauss_points_n);
 	gauss_weights.resize(gauss_points_n);
@@ -131,6 +133,18 @@ point quadelement::to_global_cord(point p_loc) {
 	return p_glob;
 }
 
+vec3d quadelement::mull_transT(vec3d v) {
+	vec3d v_turn(0, 0, 0);
+	for(int i = 0; i < 3; i++) {
+		for(int j = 0; j < 3; j++)
+			v_turn[i] += transition_matrix[j][i] * v[j];
+	}
+
+	return v_turn;
+}
+
+
+
 dof_type& quadelement::operator [] (int i) {
 	return dofs[i];
 }
@@ -178,7 +192,9 @@ vec3d quadelement::vector_basis_v(int i, double x, double y, double z) {
 			break;
 
 	};
-	return val;
+	vec3d trans = mull_transT(val);
+
+	return trans;
 
 }
 
@@ -200,7 +216,6 @@ double quadelement::get_v(double x, double y, double z) {
 
 
 double quadelement::integrate(func3d integ_func) {
-	throw;
 	double res = 0;
 
 	for(int i = 0; i < gauss_points_n; i++) {
@@ -214,7 +229,6 @@ double quadelement::integrate(func3d integ_func) {
 }
 
 dyn_matrix quadelement::get_local_matrix(double mu) {
-	throw;
 	dyn_matrix M;
 
 	M.resize(dofs_number);
@@ -239,7 +253,9 @@ vector<double> quadelement::get_local_right_part(vfunc3d rp_func) {
 
 	for(int i = 0; i < dofs_number; i++)
 		b[i] = integrate([&](double x, double y, double z)->double {
-			return  rp_func(x,y,z) * vector_basis_v(i, x, y, z);
+			vec3d v = vector_basis_v(i, x, y, z);
+			vec3d r = rp_func(x,y,z);
+			return  r * v;
 	});
 
 	return b;
@@ -339,7 +355,7 @@ dyn_matrix cubeelement::get_local_matrix(double mu) {
 	dyn_matrix M;
 
 	M.resize(dofs_number);
-	double k_sq = 1.0;
+	double k_sq = -1.0;
 
 	for(int i = 0; i < dofs_number; i++) {
 		M[i].resize(dofs_number);

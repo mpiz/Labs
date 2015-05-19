@@ -17,6 +17,7 @@ void VFEM_o2_t1_quad::set_elements(vector<quadelement>& s_faces, set<dof_type>& 
 
 	//Добавим элементы
 	elements_n = s_faces.size();
+	elements.resize(elements_n);
 	for(int el_i = 0; el_i < elements_n; el_i++) {
 		elements[el_i] = s_faces[el_i];
 		elements[el_i].renumerate_dofs(glob_to_loc);
@@ -29,12 +30,17 @@ void VFEM_o2_t1_quad::calculate() {
 	vector<vfunc3d> eq_rp;
 	eq_rp.push_back(
 		[](double x, double y, double z)->vec3d {
-		return vec3d(0, 0, 0);	
+		return vec3d(x, 0, 0);	
 		}
 	);
 	generate_matrix_with_out_bound(eq_rp);
 
 	int basis_i = 0;
+
+#ifdef DEBUGOUTP
+	auto rp_v = rp[basis_i];
+	auto sol = solutions[basis_i];
+#endif
 
 	solver.init(&gi.front(), &gj.front(), &di.front(), &gg.front(), local_dof_n);
 	solver.solve(rp[basis_i], solutions[basis_i]);

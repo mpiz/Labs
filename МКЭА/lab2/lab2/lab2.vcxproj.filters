@@ -39,6 +39,9 @@
     <ClInclude Include="CGM.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="gen_grid.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="elements_classes.cpp">
@@ -62,5 +65,19 @@
     <ClCompile Include="CGM.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="gen_grid.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="data_subseg_x.txt">
+      <Filter>Файлы ресурсов</Filter>
+    </Text>
+    <Text Include="data_subseg_y.txt">
+      <Filter>Файлы ресурсов</Filter>
+    </Text>
+    <Text Include="data_subseg_z3D.txt">
+      <Filter>Файлы ресурсов</Filter>
+    </Text>
   </ItemGroup>
 </Project>

@@ -1,22 +1,19 @@
 #include "VFEM_o2_t1_cube.h"
+#include "gen_grid.h"
 #include <stdio.h>
 
 int main() {
-	vector<node> points;
-	vector<dof_type> dofs;
 
-	points.push_back(node(-1, -1, -1));
-	points.push_back(node(1, -1, -1));
-	points.push_back(node(-1, 1, -1));
-	points.push_back(node(1, 1, -1));
-
-	points.push_back(node(-1, -1, 1));
-	points.push_back(node(1, -1, 1));
-	points.push_back(node(-1, 1, 1));
-	points.push_back(node(1, 1, 1));
+	generate_3unreg_grid();
+	generate_ku_faces(1, 1, 1);
 
 	VFEM_o2_t1_cube fem;
-	fem.input_mesh("in_nodes2.txt", "in_elems2.txt");
+	fem.input_mesh("xyz.txt", "nvtr_v.txt");
+	fem.input_bound("ku_faces.txt");
+
+	fem.calculate();
+
+	fem.output_weights("solution.txt");
 
 	/*for(int i = 0; i < 39; i++)
 		dofs.push_back(i);
