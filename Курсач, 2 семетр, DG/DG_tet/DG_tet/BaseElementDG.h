@@ -1,10 +1,14 @@
 #pragma once
 
 #include "elements_classes.h"
-#include "CGM.h"
+//#include "CGM.h"
+#include "BCG_LU.h"
+#include "gauss_solver.h"
 #include <map>
 #include <set>
 #include <iostream>
+#include <tuple>
+#include <unordered_map>
 
 #define NOTSYM
 
@@ -51,6 +55,7 @@ template<typename elementT, typename faceT> class BaseElement {
 
  protected:
 
+	  virtual int get_order(vector<node>& nodes_s) = 0;
 	  void add_port(int add_el1, int add_el2);
 	  int find_pos(int i, int j);
 
@@ -95,7 +100,7 @@ template<typename elementT, typename faceT> class BaseElement {
 
 	 vector<func3d> basis_right_parts;
 
-	 CGM solver;
+	 Gauss solver;
 
 };
 
@@ -307,7 +312,7 @@ template<typename elementT, typename faceT> template<typename func_t> void BaseE
 		di[i] = 0;
 		for(int k = 0; k < dofs_n; k++) {
 			rp[k][i] = 0;
-			solutions[k][i] = 0;
+			solutions[k][i] = 0.1;
 		}
 	}
 #ifndef NOTSYM
@@ -364,27 +369,41 @@ template<typename elementT, typename faceT> template<typename func_t> void BaseE
 		auto el_dof = elements_faces[el_i].get_dofs();
 		int el_dof_n = el_dof.size();
 
-		//double lambda = get_lambda(elements_faces[el_i]);
+//		double lambda = get_lambda(elements_faces[el_i]);
+		double lambda = 1;
 
-		auto A_loc = elements_faces[el_i].get_local_matrix(lambda);	
+		if (elements_faces[el_i].get_el_number() > 1) {
+			// Если грань внутряняя - считаем матрицу
+			auto A_loc = elements_faces[el_i].get_local_matrix(lambda);	
 
-		for(int i = 0; i < el_dof_n; i++) {
-			int i_dof = el_dof[i];
+			for(int i = 0; i < el_dof_n; i++) {
+				int i_dof = el_dof[i];
 
-			for(int j = 0; j < i; j++) {
-				int pos = find_pos(i_dof,el_dof[j]);
+				for(int j = 0; j < i; j++) {
+					int pos = find_pos(i_dof,el_dof[j]);
 #ifndef NOTSYM
-				gg[pos] += A_loc[i][j];
+					gg[pos] += A_loc[i][j];
 #else
-				gu[pos] += A_loc[i][j];
-				gl[pos] += A_loc[j][i];
+					gu[pos] += A_loc[i][j];
+					gl[pos] += A_loc[j][i];
 #endif
+				}
+
+
+				di[i_dof] += A_loc[i][i];
+
 			}
 
-
-			di[i_dof] += A_loc[i][i];
-
 		}
+		//Иначе - считаем краевые
+		else {
+			auto b_loc = elements_faces[el_i].get_local_right_part(equation_right_part[1]);
+			for(int i = 0; i < el_dof_n; i++) {
+				int i_dof = el_dof[i];
+				rp[0][i_dof] += b_loc[i];
+			}
+		}
+
 
 	}
 
@@ -399,15 +418,18 @@ template<typename elementT, typename faceT> void BaseElement<elementT, faceT>::i
 	dat_codes[304] = 4; // тетраэдр
 	int total_element_n;
 
+	map<int, int> order_dofs;
+	order_dofs[1] = 4;
+	order_dofs[2] = 10;
+
 	inp_file >> local_nodes_n >> total_element_n;
 	local_nodes.resize(local_nodes_n);
 	local_dofs.resize(local_nodes_n);
 
-	local_dof_n = local_nodes_n;
+	local_dof_n = 0;
 
 	vector<dof_type> tr_dofs;
 	vector<node> tr_node;
-
 	// Вводим узлы
 	for(int i = 0; i < local_nodes_n; i++) {
 		double x, y, z;
@@ -438,8 +460,12 @@ template<typename elementT, typename faceT> void BaseElement<elementT, faceT>::i
 			tr_p--;
 			tr_p = glob_to_loc[tr_p];
 			tr_node.push_back(local_nodes[tr_p]);
-			tr_dofs.push_back(tr_p);
 		}
+
+		int order = get_order(tr_node);
+		for(int dof_i = 0; dof_i < order_dofs[order]; dof_i++, local_dof_n++)
+			tr_dofs.push_back(local_dof_n);
+
 		if(el_code == valide_code)
 			elements.push_back(elementT(tr_node, tr_dofs));
 	

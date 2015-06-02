@@ -5,13 +5,17 @@
 #include <functional>
 #include <cstdio>
 #include <vector>
+#include "cubatures.h"
 
 typedef function<double(double, double, double)> func3d;
 typedef function<vec3d(double, double, double)> vfunc3d;
 
+using namespace tet_integration_8;
+using namespace tr_integration_8;
 
-const int gauss_points_tr = 3;
-const int gauss_points_tet = 4;
+
+const int gauss_points_tr = tr_integration::gauss_num;
+const int gauss_points_tet = tet_integration::gauss_num;
 const int face_el_n = 2;
 
 class trelement;
@@ -52,8 +56,6 @@ class trelement {
 	 trelement(vector<node> nodes_s, vector<dof_type> s_dofs);
 
 	 int& operator [] (int i); //получить i-ую степень свободы
-
-	 double integral(func3d func); //вычисление интеграла по треугольнику (Гаусс, 3 точки) в локальныъ координатах
 
 	 int get_ph_area();
 	 void set_ph_area(int sph_area);
@@ -156,14 +158,19 @@ protected:
 
 class trface: public trelement {
 public:
-	trface(vector<node> nodes_s, tetelement* el1, tetelement* el2);
+	trface(vector<node> nodes_s);
+
+	void add_element(tetelement* el);
+	int get_el_number();
 
 	dyn_matrix get_local_matrix(double lambda);
+	vector<double> get_local_right_part(func3d rp_func);
 
 private:
 	array<tetelement*, face_el_n> face_elements;
 
 	array<int, face_el_n> elements_dofs;
+	int el_count;
 
 
 };
@@ -197,13 +204,11 @@ class tetelement {
 
 	 static const int element_nodes = 4;
 
+	 double L2_diff(func3d f, vector<double>& q_loc);
 	 double L2_diff(func3d f, vector<double>& q_loc, vector<double>& q_virtual);
 
  private:
 
-	 vector<tet_bfunc> scalar_basis;
-	 vector<tet_vbfunc> scalar_basis_grad;
-	 vector<tet_bfunc> scalar_basis_div_grad;
 	 vector<dof_type> dofs;
 	 unsigned int dofs_number;
 
@@ -235,19 +240,4 @@ class tetelement {
 	  array<double, 3> ch_points[5];
 	  double edges_a[6][3], edges_b[6][3];
 
-	  double basis_1(double x, double y, double z);
-	  double basis_2(double x, double y, double z);
-	  double basis_3(double x, double y, double z);
-	  double basis_4(double x, double y, double z);
-
-
-	  vec3d grad_basis_1(double x, double y, double z);
-	  vec3d grad_basis_2(double x, double y, double z);
-	  vec3d grad_basis_3(double x, double y, double z);
-	  vec3d grad_basis_4(double x, double y, double z);
-
-	  double div_grad_basis_1(double x, double y, double z);
-	  double div_grad_basis_2(double x, double y, double z);
-	  double div_grad_basis_3(double x, double y, double z);
-	  double div_grad_basis_4(double x, double y, double z);
 };

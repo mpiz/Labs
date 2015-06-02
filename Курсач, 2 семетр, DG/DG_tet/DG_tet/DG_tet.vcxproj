@@ -65,17 +65,24 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BaseElementDG.h" />
+    <ClInclude Include="BCG_LU.h" />
+    <ClInclude Include="cubatures.h" />
     <ClInclude Include="DG_tet.h" />
     <ClInclude Include="elements_classes.h" />
     <ClInclude Include="Gauss.h" />
+    <ClInclude Include="gauss_solver.h" />
     <ClInclude Include="geom_classes.h" />
     <ClInclude Include="L_cords_gen.h" />
     <ClInclude Include="macro.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BCG_LU.cpp" />
+    <ClCompile Include="cubatures.cpp" />
     <ClCompile Include="DG_tet.cpp" />
     <ClCompile Include="elements_classes.cpp" />
+    <ClCompile Include="gauss_solver.cpp" />
     <ClCompile Include="geom_classes.cpp" />
+    <ClCompile Include="launch.cpp" />
     <ClCompile Include="L_cords_gen.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

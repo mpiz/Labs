@@ -1,5 +1,40 @@
 #include "elements_classes.h"
 
+const int edge_lambdas[6][2] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
+const int face_lambdas[4][3] = {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+
+double kernel(int order, double x) {
+	double result;
+
+	switch(order) {
+	case 0 : 
+		result = -2.0 * sqrt(3.0 / 2.0);
+		break;
+	case 1 :
+		result = -2.0 * sqrt(5.0 / 2.0) * x;
+		break;
+
+	}
+
+	return result;
+}
+
+double kernel_d(int order, double x) {
+	double result;
+
+	switch(order) {
+	case 0 : 
+		result = 0;
+		break;
+	case 1 :
+		result = -2.0 * sqrt(5.0 / 2.0);
+		break;
+
+	}
+
+	return result;
+}
+
 
 // ========  Отрезки ========
 sector::sector() {
@@ -98,29 +133,35 @@ void trelement::init_cords() {
 
 	generate_L_cords();
 
+
+
 	//Нахождене точек интегрирования по Гауссу, в локальной системе координат
 
 	jacobian = (g1.cross(g2)).norm();
 
-	gauss_points[0] = point(h1 / 2, 0, 0);
-	gauss_points[1] = point(trpoint[2][0] / 2.0, trpoint[2][1] / 2.0, trpoint[2][2] / 2.0);
-	gauss_points[2] = (transition_matrix * (0.5*g1 + 0.5*g2)).to_point();
+	double Gauss_cord_gl[3][gauss_points_tr];
 
-	gauss_weights[0] = gauss_weights[1] = gauss_weights[2] = 1.0 / 6.0;
+	//Перевод на текущий треугольник
+
+	for(int i = 0; i < 3; i++) {
+		for(int j = 0 ; j < gauss_points_tr; j++) {
+			Gauss_cord_gl[i][j] = 0;
+			for(int k = 0; k < 3; k++)
+				Gauss_cord_gl[i][j] += D_matrix[i][k] * tr_integration::gauss_points_master[j][k];
+		}
+	}
 
 	for(int i = 0; i < gauss_points_tr; i++)
+		gauss_points[i] = point(Gauss_cord_gl[0][i], Gauss_cord_gl[1][i], 0);
+
+	double wt  = 0;
+
+	for(int i = 0; i < gauss_points_tr; i++) {
 		gauss_points_global[i] = to_global_cord(gauss_points[i]);
+		gauss_weights[i] = tr_integration::gauss_weights[i];
+		wt += gauss_weights[i];
+	}
 
-	scalar_basis.push_back(&trelement::basis_1);
-	scalar_basis.push_back(&trelement::basis_2);
-	scalar_basis.push_back(&trelement::basis_3);
-
-	scalar_basis_grad.push_back(&trelement::grad_basis_1);
-	scalar_basis_grad.push_back(&trelement::grad_basis_2);
-	scalar_basis_grad.push_back(&trelement::grad_basis_3);
-	
-	scalar_basis.resize(dofs_number);
-	scalar_basis_grad.resize(dofs_number);
 
 }
 
@@ -200,6 +241,8 @@ vec3d trelement::to_global_cord(vec3d v_loc) {
 
 double trelement::scalar_basis_v(int i, double x, double y, double z) {
 	point p_glob(x,y,z);
+//	point p_loc = to_local_cord(p_glob);
+
 	return (this->*scalar_basis[i])(x,y,z);
 
 }
@@ -344,37 +387,53 @@ vec3d trelement::grad_basis_3(double x, double y, double z) {
 // ======== Треугольники DG ========
 
 
-trface::trface(vector<node> nodes_s, tetelement* el1, tetelement* el2) : trelement(nodes_s) {
-	face_elements[0] = el1;
-	face_elements[1] = el2;
-
+trface::trface(vector<node> nodes_s) : trelement(nodes_s) {
 	dofs_number = 0;
-
-	for(int i = 0; i < face_el_n; i++) {
-		auto el_dofs = face_elements[i]->get_dofs();
-		auto el_dofs_n = el_dofs.size();
-		elements_dofs[i] = el_dofs_n;
-		dofs_number += el_dofs_n;
-
-		for(auto dof_iter = el_dofs.begin(); dof_iter != el_dofs.end(); dof_iter++)
-			dofs.push_back(*dof_iter);
-	}
-
+	el_count = 0;
 	init_cords();
+}
 
-	// Нормаль должна быть венешней для первого элемента. Убедимся в этом
-	vec3d cent_vector(face_elements[0]->get_center(), center);
-	double vec_dp = cent_vector * normal_vector;
-	// Если надо - развернём
-	if (vec_dp < 0)
-		normal_vector = (-1) * normal_vector;
+void trface::add_element(tetelement* el) {
+
+	face_elements[el_count] = el;
+	if(el_count == 0) {
+		// Нормаль должна быть венешней для первого элемента. Убедимся в этом
+		vec3d cent_vector(face_elements[0]->get_center(), center);
+		double vec_dp = cent_vector * normal_vector;
+		// Если надо - развернём
+		if (vec_dp < 0)
+			normal_vector = (-1) * normal_vector;
+	}
+	auto el_dofs = face_elements[el_count]->get_dofs();
+	auto el_dofs_n = el_dofs.size();
+	elements_dofs[el_count] = el_dofs_n;
+	dofs_number += el_dofs_n;
+
+	for(auto dof_iter = el_dofs.begin(); dof_iter != el_dofs.end(); dof_iter++)
+		dofs.push_back(*dof_iter);
+
+	el_count++;
+
+}
+
+vector<double> trface::get_local_right_part(func3d rp_func) {
+	vector<double> b_loc;
+	b_loc.resize(dofs_number);
+	for(int i = 0; i < dofs_number; i++) {
+		b_loc[i] = integrate([&](double x, double y, double z)->double {
+			return face_elements[0]->scalar_basis_grad_v(i, x, y, z) * normal_vector * rp_func(x, y, z);
+		});
+
+	}
+	return b_loc;
+}
+
+int trface::get_el_number() {
+	return el_count;
 }
 
 dyn_matrix trface::get_local_matrix(double lambda) {
 	int get_dofs;
-	
-#define template_func_diag(x, y, z, phi1, phi2, g_phi1, g_phi2, i, j) lambda * ((phi1)((i), (x), (y), (z)) * (g_phi2)((j), (x), (y), (z)) - (phi2)((j), (x), (y), (z)) *(g_phi1)((i), (x), (y), (z))) * normal_vector / 2.0
-#define template_func(x, y, z, phi1, phi2, g_phi1, g_phi2, i, j) lambda * ((phi1)((i), (x), (y), (z)) * (g_phi2)((j), (x), (y), (z)) + (phi2)((j), (x), (y), (z)) *(g_phi1)((i), (x), (y), (z))) * normal_vector / 2.0
 
 	dyn_matrix A_loc;
 	A_loc.resize(dofs_number);
@@ -386,12 +445,20 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 	for(int el_i = 0; el_i < face_el_n; el_i++) {
 		for(int dof_i = 0; dof_i < elements_dofs[el_i]; dof_i++)  {
 			for(int dof_j = 0; dof_j < elements_dofs[el_i]; dof_j++) {
-				A_loc[count_dof+dof_i][count_dof+dof_j] = integral([&](double x, double y, double z)->double {
-					return template_func_diag(x, y, z, 
-							face_elements[el_i]->scalar_basis_v , face_elements[el_i]->scalar_basis_v,
-							face_elements[el_i]->scalar_basis_grad_v, face_elements[el_i]->scalar_basis_grad_v,
-							dof_i, dof_j
-						);
+				A_loc[count_dof+dof_i][count_dof+dof_j] = integrate([&](double x, double y, double z)->double {
+					double phi1, phi2;
+					vec3d v1, v2;
+					phi1 = face_elements[el_i]->scalar_basis_v(dof_i, x, y, z);
+					phi2 = face_elements[el_i]->scalar_basis_v(dof_j, x, y, z);
+					v1 = face_elements[el_i]->scalar_basis_grad_v(dof_i, x, y, z);
+					v2 = face_elements[el_i]->scalar_basis_grad_v(dof_j, x, y, z);
+					vec3d nv = normal_vector;
+
+					double res = lambda * (phi1 * v2 - phi2 * v1) * normal_vector / 2.0;
+					if (el_i == 1)
+						res *= -1;
+
+					return res;
 
 				});
 
@@ -404,18 +471,21 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 	// Внедиагональные блоки
 	for(int dof2_i = 0; dof2_i < elements_dofs[1]; dof2_i++) {
 		for(int dof1_j = 0; dof1_j < elements_dofs[0]; dof1_j++) {
-			A_loc[elements_dofs[0]+dof2_i][dof1_j] = integral([&](double x, double y, double z)->double {
-					return template_func(x, y, z, 
-							face_elements[0]->scalar_basis_v , face_elements[1]->scalar_basis_v,
-							face_elements[0]->scalar_basis_grad_v, face_elements[1]->scalar_basis_grad_v,
-							dof1_j, dof2_i
-						);
+			A_loc[elements_dofs[0]+dof2_i][dof1_j] = integrate([&](double x, double y, double z)->double {
+					double phi1, phi2;
+					vec3d v1, v2;
+					phi1 = face_elements[0]->scalar_basis_v(dof1_j, x, y, z);
+					phi2 = face_elements[1]->scalar_basis_v(dof2_i, x, y, z);
+					v1 = face_elements[0]->scalar_basis_grad_v(dof1_j, x, y, z);
+					v2 = face_elements[1]->scalar_basis_grad_v(dof2_i, x, y, z);
+
+					double res = lambda * (phi1 * v2 + phi2 * v2) * normal_vector / 2.0;
+
+					return res;
 			});
 			A_loc[dof1_j][elements_dofs[0]+dof2_i] = -A_loc[elements_dofs[0]+dof2_i][dof1_j];
 		}
 	}
-	
-#undef template_func
 
 	return A_loc;
 }
@@ -459,11 +529,93 @@ point tetelement::get_center() {
 }
 
 double tetelement::scalar_basis_v(int i, double x, double y, double z) {
-	return (this->*scalar_basis[i])(x,y,z); 
+	point p_glob(x, y, z);
+	double result;
+
+
+
+	// То, что заместо первого порядка
+	if (i <= 3) {
+		double lambda_i = lambda(i, p_glob);
+		result = lambda_i * (lambda_i - 0.5);
+	}
+	// Рёберные функции второго порядка
+	else if(i <= 9) {
+		int shift = i - 3;
+		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
+		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
+		result = 2 * lambda_1 * lambda_2;
+	}
+	// Рёберные функции третьего порядка
+	else if (i <= 15) {
+		int shift = i - 9;
+		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
+		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
+		double ker_val = kernel(1, lambda_1 - lambda_2);
+		result = lambda_1 * lambda_2 * ker_val;
+	}
+	// Функции третьего порядка, ассациированные с гранями
+	else if (i <= 19) {
+		int shift = i - 15;
+		array<double, 3> face_lambda;
+		result = 1;
+		for(int f_i = 0; f_i < 3; f_i++) {
+			face_lambda[i] = lambda(face_lambdas[shift][f_i], p_glob);
+			result *= face_lambda[i];
+		}
+	}
+
+	return result; 
 }
 
 vec3d tetelement::scalar_basis_grad_v(int i, double x, double y, double z) {
-	return (this->*scalar_basis_grad[i])(x,y,z); 
+	point p_glob(x, y, z);
+	vec3d result;
+
+
+
+	// То, что заместо первого порядка
+	if (i <= 3) {
+		double lambda_i = lambda(i, p_glob);
+		vec3d lambda_g = grad_lambda(i);
+		result =  (2*lambda_i - 0.5) * lambda_g;
+	}
+	// Рёберные функции второго порядка
+	else if(i <= 9) {
+		int shift = i - 3;
+		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
+		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
+		vec3d lambda_1_g = grad_lambda(edge_lambdas[shift][0]);
+		vec3d lambda_2_g = grad_lambda(edge_lambdas[shift][1]);
+		result = 2 * (lambda_1 * lambda_2_g + lambda_2 * lambda_1_g);
+	}
+	// Рёберные функции третьего порядка
+	else if (i <= 15) {
+		int shift = i - 9;
+		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
+		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
+		double ker_val = kernel(1, lambda_1 - lambda_2);
+
+		vec3d lambda_1_g = grad_lambda(edge_lambdas[shift][0]);
+		vec3d lambda_2_g = grad_lambda(edge_lambdas[shift][1]);
+		double d_ker = kernel_d(1, lambda_1 - lambda_2);
+
+		result = lambda_1 * ker_val * lambda_2_g + lambda_2 * ker_val* lambda_1_g + lambda_1 * lambda_2 * d_ker * (lambda_1_g - lambda_2_g);
+	}
+	// Функции третьего порядка, ассациированные с гранями
+	else if (i <= 19) {
+		int shift = i - 15;
+		array<double, 3> face_lambda;
+		array<vec3d, 3> face_grads;
+		for(int f_i = 0; f_i < 3; f_i++) {
+			face_lambda[i] = lambda(face_lambdas[shift][f_i], p_glob);
+			face_grads[i] = grad_lambda(face_lambdas[shift][f_i]);
+		}
+
+		result = face_lambda[0] * face_lambda[1] * face_grads[2] + face_lambda[0] * face_lambda[2] * face_grads[1] + face_lambda[1] * face_lambda[2] * face_grads[0];
+	}
+
+	return result; 
 }
 
 vector<dof_type> tetelement::get_dofs() {
@@ -572,25 +724,9 @@ void tetelement::init_coords() {
 	double gauss_a = (5.0 - sqrt(5.0)) / 20.0;
 	double gauss_b = (5.0 + 3.0*sqrt(5.0)) / 20.0;
 
-	double Gauss_cord[4][4];
-	double Gauss_cord_gl[4][4];
+	double Gauss_cord_gl[4][gauss_points_tet];
 
-	//i-й столбец, i-я точка
 
-	Gauss_cord[0][0] = 1 - gauss_b - 2*gauss_a;
-	Gauss_cord[1][0] = gauss_b;
-	Gauss_cord[2][0] = Gauss_cord[3][0] = gauss_a;
-
-	Gauss_cord[0][1] = 1 - gauss_b - 2*gauss_a;
-	Gauss_cord[1][1] = Gauss_cord[3][1] = gauss_a;
-	Gauss_cord[2][1] = gauss_b;
-
-	Gauss_cord[0][2] = 1 - gauss_b - 2*gauss_a;
-	Gauss_cord[1][2] = Gauss_cord[2][2] = gauss_a;
-	Gauss_cord[3][2] = gauss_b;
-
-	Gauss_cord[0][3] = 1 - 3*gauss_a;
-	Gauss_cord[1][3] = Gauss_cord[2][3] = Gauss_cord[3][3] = gauss_a;
 
 	//Перевод на текущий тетраэдр
 
@@ -598,7 +734,7 @@ void tetelement::init_coords() {
 		for(int j = 0 ; j < gauss_points_tet; j++) {
 			Gauss_cord_gl[i][j] = 0;
 			for(int k = 0; k < 4; k++)
-				Gauss_cord_gl[i][j] += D_matrix[i][k] * Gauss_cord[k][j];
+				Gauss_cord_gl[i][j] += D_matrix[i][k] * tet_integration::gauss_points_master[j][k];
 		}
 	}
 
@@ -606,8 +742,11 @@ void tetelement::init_coords() {
 		for(int j = 0; j < 3; j++)
 			gauss_points[i][j] = Gauss_cord_gl[j][i];
 
-	for(int i = 0; i < gauss_points_tet; i++)
-		gauss_weights[i] = 1.0 / 24.0;
+	double w_t = 0;
+	for(int i = 0; i < gauss_points_tet; i++) {
+		gauss_weights[i] = tet_integration::gauss_weights[i] / 6;
+		w_t += gauss_weights[i];
+	}
 
 	//Ниже - для данные для построения дерева поиска
 
@@ -644,21 +783,6 @@ void tetelement::init_coords() {
 		edges_b[5][i] = node_array[2][i];
 
 	}
-
-	
-	//Формирование базиса в виде массива функций
-	scalar_basis.push_back(&tetelement::basis_1);
-	scalar_basis.push_back(&tetelement::basis_2);
-	scalar_basis.push_back(&tetelement::basis_3);
-	scalar_basis.push_back(&tetelement::basis_4);
-
-	scalar_basis_grad.push_back(&tetelement::grad_basis_1);
-	scalar_basis_grad.push_back(&tetelement::grad_basis_2);
-	scalar_basis_grad.push_back(&tetelement::grad_basis_3);
-	scalar_basis_grad.push_back(&tetelement::grad_basis_4);
-
-	scalar_basis.resize(dofs_number);
-	scalar_basis_grad.resize(dofs_number);
 
 }
 
@@ -698,7 +822,7 @@ dyn_matrix tetelement::get_local_matrix(double mu) {
 		A_loc[i].resize(dofs_number);
 		for(int j = 0; j <= i; j++) {
 			A_loc[i][j] += integrate([&](double x, double y, double z)->double {
-				return mu * (this->*scalar_basis_grad[i])(x,y,z) * (this->*scalar_basis_grad[j])(x,y,z);
+				return mu * scalar_basis_v(i,x,y,z) * scalar_basis_v(j,x,y,z);
 			});
 			A_loc[j][i] = A_loc[i][j];
 		}
@@ -714,10 +838,28 @@ vector<double> tetelement::get_local_right_part(func3d rp_func) {
 
 	for(int i = 0; i < dofs_number; i++)
 		b_loc[i] = integrate([&](double x, double y, double z)->double{
-			return rp_func(x,y,z) * (this->*scalar_basis[i])(x,y,z);
+			return rp_func(x,y,z) * scalar_basis_v(i,x,y,z);
 	});
 
 	return b_loc;
+}
+
+double tetelement::L2_diff(func3d f, vector<double>& q_loc){
+
+	int loc_n = q_loc.size();
+
+	double res = integrate([&](double x, double y, double z){
+		double u = 0;
+		for (int j = 0; j < loc_n; j++) {
+			double basis_v = scalar_basis_v(j, x, y, z);
+			u += q_loc[j] * basis_v;
+		}
+
+		double f_v = f(x, y, z);
+		return (u - f_v)*(u - f_v);
+	});
+
+	return res;
 }
 
 double tetelement::L2_diff(func3d f, vector<double>& q_loc, vector<double>& q_virtual){
@@ -728,7 +870,7 @@ double tetelement::L2_diff(func3d f, vector<double>& q_loc, vector<double>& q_vi
 	double res = integrate([&](double x, double y, double z){
 		double u = 0;
 		for (int j = 0; j < loc_n; j++) {
-			double basis_v = (this->*scalar_basis[j])(x, y, z);
+			double basis_v = scalar_basis_v(j, x, y, z);
 			double q_v = 0;
 			for (int i = 0; i < virt_n; i++) {
 				q_v += q_virtual[i] * q_loc[j];
@@ -741,39 +883,4 @@ double tetelement::L2_diff(func3d f, vector<double>& q_loc, vector<double>& q_vi
 	});
 
 	return res;
-}
-
-
-// == Базисные функции ==
-
-double tetelement::basis_1(double x, double y, double z) {
-	return lambda(0, point(x,y,z));
-}
-
-double tetelement::basis_2(double x, double y, double z) {
-	return lambda(1, point(x,y,z));
-}
-
-double tetelement::basis_3(double x, double y, double z) {
-	return lambda(2, point(x,y,z));
-}
-
-double tetelement::basis_4(double x, double y, double z) {
-	return lambda(3, point(x,y,z));
-}
-
-vec3d tetelement::grad_basis_1(double x, double y, double z) {
-	return grad_lambda(0);
-}
-
-vec3d tetelement::grad_basis_2(double x, double y, double z) {
-	return grad_lambda(1);
-}
-
-vec3d tetelement::grad_basis_3(double x, double y, double z) {
-	return grad_lambda(2);
-}
-
-vec3d tetelement::grad_basis_4(double x, double y, double z) {
-	return grad_lambda(3);
 }
