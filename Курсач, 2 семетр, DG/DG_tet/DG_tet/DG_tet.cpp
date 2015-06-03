@@ -98,5 +98,5 @@ double DG_tet::get_lambda(tetelement& el) {
 }
 
 int DG_tet::get_order(vector<node>& nodes_s) {
-	return 1;
+	return 2;
 }

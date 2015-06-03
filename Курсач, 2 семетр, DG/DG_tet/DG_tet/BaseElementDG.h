@@ -361,6 +361,24 @@ template<typename elementT, typename faceT> template<typename func_t> void BaseE
 
 		}
 
+
+#ifdef DEBUGOUTP
+		stringstream sname;
+		sname << "matrix_" << el_i << ".txt";
+
+		ofstream matrix_outp(sname.str().c_str());
+		matrix_outp << std::scientific;
+		for(int i = 0; i < el_dof_n; i++) {
+			for(int j = 0; j < el_dof_n; j++) {
+				matrix_outp << A_loc[i][j];
+				if(j != el_dof_n-1)
+					matrix_outp << "\t";
+				else
+					matrix_outp << "\n";
+			}
+		}
+		matrix_outp.close();
+#endif
 	}
 
 

@@ -168,9 +168,11 @@ public:
 
 private:
 	array<tetelement*, face_el_n> face_elements;
-
+	array<vec3d, face_el_n> normals;
 	array<int, face_el_n> elements_dofs;
 	int el_count;
+
+	
 
 
 };

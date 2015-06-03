@@ -158,7 +158,7 @@ void trelement::init_cords() {
 
 	for(int i = 0; i < gauss_points_tr; i++) {
 		gauss_points_global[i] = to_global_cord(gauss_points[i]);
-		gauss_weights[i] = tr_integration::gauss_weights[i];
+		gauss_weights[i] = tr_integration::gauss_weights[i] / 2.0;
 		wt += gauss_weights[i];
 	}
 
@@ -402,7 +402,12 @@ void trface::add_element(tetelement* el) {
 		double vec_dp = cent_vector * normal_vector;
 		// Если надо - развернём
 		if (vec_dp < 0)
-			normal_vector = (-1) * normal_vector;
+			normals[0] = (-1) * normal_vector;
+		else
+			normals[0] = normal_vector;
+	}
+	else {
+		normals[1] = (-1)*normals[0];
 	}
 	auto el_dofs = face_elements[el_count]->get_dofs();
 	auto el_dofs_n = el_dofs.size();
@@ -421,7 +426,12 @@ vector<double> trface::get_local_right_part(func3d rp_func) {
 	b_loc.resize(dofs_number);
 	for(int i = 0; i < dofs_number; i++) {
 		b_loc[i] = integrate([&](double x, double y, double z)->double {
-			return face_elements[0]->scalar_basis_grad_v(i, x, y, z) * normal_vector * rp_func(x, y, z);
+			auto v1 = face_elements[0]->scalar_basis_grad_v(i, x, y, z);
+			auto f = rp_func(x, y, z);
+
+			double res = v1 * normals[0] * f;
+
+			return res;
 		});
 
 	}
@@ -433,7 +443,6 @@ int trface::get_el_number() {
 }
 
 dyn_matrix trface::get_local_matrix(double lambda) {
-	int get_dofs;
 
 	dyn_matrix A_loc;
 	A_loc.resize(dofs_number);
@@ -454,9 +463,7 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 					v2 = face_elements[el_i]->scalar_basis_grad_v(dof_j, x, y, z);
 					vec3d nv = normal_vector;
 
-					double res = lambda * (phi1 * v2 - phi2 * v1) * normal_vector / 2.0;
-					if (el_i == 1)
-						res *= -1;
+					double res = lambda * (phi1 * v2 - phi2 * v1) * normals[el_i] / 2.0;
 
 					return res;
 
@@ -469,23 +476,41 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 	}
 
 	// Внедиагональные блоки
-	for(int dof2_i = 0; dof2_i < elements_dofs[1]; dof2_i++) {
-		for(int dof1_j = 0; dof1_j < elements_dofs[0]; dof1_j++) {
-			A_loc[elements_dofs[0]+dof2_i][dof1_j] = integrate([&](double x, double y, double z)->double {
+	for(int dof1_i = 0; dof1_i < elements_dofs[0]; dof1_i++) {
+		for(int dof2_j = 0; dof2_j < elements_dofs[1]; dof2_j++) {
+
+			A_loc[dof1_i][elements_dofs[0]+dof2_j] = integrate([&](double x, double y, double z)->double {
 					double phi1, phi2;
 					vec3d v1, v2;
-					phi1 = face_elements[0]->scalar_basis_v(dof1_j, x, y, z);
-					phi2 = face_elements[1]->scalar_basis_v(dof2_i, x, y, z);
-					v1 = face_elements[0]->scalar_basis_grad_v(dof1_j, x, y, z);
-					v2 = face_elements[1]->scalar_basis_grad_v(dof2_i, x, y, z);
+					phi1 = face_elements[0]->scalar_basis_v(dof1_i, x, y, z);
+					phi2 = face_elements[1]->scalar_basis_v(dof2_j, x, y, z);
+					v1 = face_elements[0]->scalar_basis_grad_v(dof1_i, x, y, z);
+					v2 = face_elements[1]->scalar_basis_grad_v(dof2_j, x, y, z);
 
-					double res = lambda * (phi1 * v2 + phi2 * v2) * normal_vector / 2.0;
+					double res = lambda * (phi1 * v2 * normals[0] - phi2 * v1 * normals[1]) / 2.0;
 
 					return res;
 			});
-			A_loc[dof1_j][elements_dofs[0]+dof2_i] = -A_loc[elements_dofs[0]+dof2_i][dof1_j];
+			A_loc[elements_dofs[0]+dof2_j][dof1_i] = -A_loc[dof1_i][elements_dofs[0]+dof2_j];
 		}
 	}
+
+#ifdef DEBUGOUTP
+	ofstream outp("face_matrix.txt");
+	outp << std::scientific;
+	for(int i = 0; i < dofs_number; i++) {
+		for(int j = 0; j < dofs_number; j++) {
+			outp << A_loc[i][j];
+			if(j != dofs_number-1)
+				outp << "\t";
+			else
+				outp << "\n";
+		}
+	}
+
+	outp.close();
+
+#endif
 
 	return A_loc;
 }
@@ -541,14 +566,14 @@ double tetelement::scalar_basis_v(int i, double x, double y, double z) {
 	}
 	// Рёберные функции второго порядка
 	else if(i <= 9) {
-		int shift = i - 3;
+		int shift = i - 4;
 		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
 		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
 		result = 2 * lambda_1 * lambda_2;
 	}
 	// Рёберные функции третьего порядка
 	else if (i <= 15) {
-		int shift = i - 9;
+		int shift = i - 10;
 		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
 		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
 		double ker_val = kernel(1, lambda_1 - lambda_2);
@@ -556,7 +581,7 @@ double tetelement::scalar_basis_v(int i, double x, double y, double z) {
 	}
 	// Функции третьего порядка, ассациированные с гранями
 	else if (i <= 19) {
-		int shift = i - 15;
+		int shift = i - 16;
 		array<double, 3> face_lambda;
 		result = 1;
 		for(int f_i = 0; f_i < 3; f_i++) {
@@ -582,7 +607,7 @@ vec3d tetelement::scalar_basis_grad_v(int i, double x, double y, double z) {
 	}
 	// Рёберные функции второго порядка
 	else if(i <= 9) {
-		int shift = i - 3;
+		int shift = i - 4;
 		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
 		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
 		vec3d lambda_1_g = grad_lambda(edge_lambdas[shift][0]);
@@ -591,7 +616,7 @@ vec3d tetelement::scalar_basis_grad_v(int i, double x, double y, double z) {
 	}
 	// Рёберные функции третьего порядка
 	else if (i <= 15) {
-		int shift = i - 9;
+		int shift = i - 10;
 		double lambda_1 = lambda(edge_lambdas[shift][0], p_glob);
 		double lambda_2 = lambda(edge_lambdas[shift][1], p_glob);
 		double ker_val = kernel(1, lambda_1 - lambda_2);
@@ -604,7 +629,7 @@ vec3d tetelement::scalar_basis_grad_v(int i, double x, double y, double z) {
 	}
 	// Функции третьего порядка, ассациированные с гранями
 	else if (i <= 19) {
-		int shift = i - 15;
+		int shift = i - 16;
 		array<double, 3> face_lambda;
 		array<vec3d, 3> face_grads;
 		for(int f_i = 0; f_i < 3; f_i++) {
@@ -738,7 +763,7 @@ void tetelement::init_coords() {
 		}
 	}
 
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < gauss_points_tet; i++)
 		for(int j = 0; j < 3; j++)
 			gauss_points[i][j] = Gauss_cord_gl[j][i];
 
@@ -822,7 +847,9 @@ dyn_matrix tetelement::get_local_matrix(double mu) {
 		A_loc[i].resize(dofs_number);
 		for(int j = 0; j <= i; j++) {
 			A_loc[i][j] += integrate([&](double x, double y, double z)->double {
-				return mu * scalar_basis_v(i,x,y,z) * scalar_basis_v(j,x,y,z);
+				auto v1 = scalar_basis_grad_v(i,x,y,z);
+				auto v2 = scalar_basis_grad_v(j,x,y,z);
+				return mu * v1 * v2;
 			});
 			A_loc[j][i] = A_loc[i][j];
 		}
