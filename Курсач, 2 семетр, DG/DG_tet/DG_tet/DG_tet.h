@@ -1,5 +1,6 @@
 #include "BaseElementDG.h"
 
+double solution(double x, double y, double z);
 
 class DG_tet : public BaseElement<tetelement, trface> {
 public:

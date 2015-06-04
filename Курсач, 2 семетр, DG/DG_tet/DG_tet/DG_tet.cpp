@@ -1,5 +1,13 @@
 #include "DG_tet.h"
 
+double solution(double x, double y, double z) {
+	return x*x*x;
+}
+
+double right_part(double x, double y, double z) {
+	return -6*x;
+}
+
 DG_tet::DG_tet() {
 	dofs_n = 1;
 }
@@ -57,14 +65,8 @@ void DG_tet::make_faces() {
 
 void DG_tet::calculate() {
 	vector<func3d> rps;
-	rps.push_back([&](double x, double y, double z)->double {
-		return 0;
-		}
-	);
-	rps.push_back([&](double x, double y, double z)->double {
-		return 1;
-		}
-	);
+	rps.push_back(right_part);
+	rps.push_back(solution);
 
 	generate_port();
 	generate_matrix_with_out_bound(rps);
@@ -98,5 +100,5 @@ double DG_tet::get_lambda(tetelement& el) {
 }
 
 int DG_tet::get_order(vector<node>& nodes_s) {
-	return 2;
+	return 3;
 }

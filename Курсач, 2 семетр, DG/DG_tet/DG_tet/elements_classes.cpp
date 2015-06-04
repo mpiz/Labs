@@ -450,6 +450,11 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 		A_loc[i].resize(dofs_number);
 
 	// Диагональные блоки
+
+	double mull = 1;
+	if (el_count == 1)
+		mull = 2;
+
 	int count_dof = 0;
 	for(int el_i = 0; el_i < face_el_n; el_i++) {
 		for(int dof_i = 0; dof_i < elements_dofs[el_i]; dof_i++)  {
@@ -463,7 +468,7 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 					v2 = face_elements[el_i]->scalar_basis_grad_v(dof_j, x, y, z);
 					vec3d nv = normal_vector;
 
-					double res = lambda * (phi1 * v2 - phi2 * v1) * normals[el_i] / 2.0;
+					double res = lambda * (phi1 * v2 - phi2 * v1) * normals[el_i] * mull / 2.0;
 
 					return res;
 
@@ -585,8 +590,8 @@ double tetelement::scalar_basis_v(int i, double x, double y, double z) {
 		array<double, 3> face_lambda;
 		result = 1;
 		for(int f_i = 0; f_i < 3; f_i++) {
-			face_lambda[i] = lambda(face_lambdas[shift][f_i], p_glob);
-			result *= face_lambda[i];
+			face_lambda[f_i] = lambda(face_lambdas[shift][f_i], p_glob);
+			result *= face_lambda[f_i];
 		}
 	}
 
@@ -633,8 +638,8 @@ vec3d tetelement::scalar_basis_grad_v(int i, double x, double y, double z) {
 		array<double, 3> face_lambda;
 		array<vec3d, 3> face_grads;
 		for(int f_i = 0; f_i < 3; f_i++) {
-			face_lambda[i] = lambda(face_lambdas[shift][f_i], p_glob);
-			face_grads[i] = grad_lambda(face_lambdas[shift][f_i]);
+			face_lambda[f_i] = lambda(face_lambdas[shift][f_i], p_glob);
+			face_grads[f_i] = grad_lambda(face_lambdas[shift][f_i]);
 		}
 
 		result = face_lambda[0] * face_lambda[1] * face_grads[2] + face_lambda[0] * face_lambda[2] * face_grads[1] + face_lambda[1] * face_lambda[2] * face_grads[0];

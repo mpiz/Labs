@@ -390,31 +390,30 @@ template<typename elementT, typename faceT> template<typename func_t> void BaseE
 //		double lambda = get_lambda(elements_faces[el_i]);
 		double lambda = 1;
 
-		if (elements_faces[el_i].get_el_number() > 1) {
-			// Если грань внутряняя - считаем матрицу
-			auto A_loc = elements_faces[el_i].get_local_matrix(lambda);	
 
-			for(int i = 0; i < el_dof_n; i++) {
-				int i_dof = el_dof[i];
+		// Расчитаем матрицу для грани
+		auto A_loc = elements_faces[el_i].get_local_matrix(lambda);	
 
-				for(int j = 0; j < i; j++) {
-					int pos = find_pos(i_dof,el_dof[j]);
+		for(int i = 0; i < el_dof_n; i++) {
+			int i_dof = el_dof[i];
+
+			for(int j = 0; j < i; j++) {
+				int pos = find_pos(i_dof,el_dof[j]);
 #ifndef NOTSYM
-					gg[pos] += A_loc[i][j];
+				gg[pos] += A_loc[i][j];
 #else
-					gu[pos] += A_loc[i][j];
-					gl[pos] += A_loc[j][i];
+				gu[pos] += A_loc[i][j];
+				gl[pos] += A_loc[j][i];
 #endif
-				}
-
-
-				di[i_dof] += A_loc[i][i];
-
 			}
 
+
+			di[i_dof] += A_loc[i][i];
+
 		}
-		//Иначе - считаем краевые
-		else {
+
+		// Если грань - внешняя, то расчитаем вклады в правую часть
+		if (elements_faces[el_i].get_el_number() == 1) {
 			auto b_loc = elements_faces[el_i].get_local_right_part(equation_right_part[1]);
 			for(int i = 0; i < el_dof_n; i++) {
 				int i_dof = el_dof[i];
@@ -439,6 +438,7 @@ template<typename elementT, typename faceT> void BaseElement<elementT, faceT>::i
 	map<int, int> order_dofs;
 	order_dofs[1] = 4;
 	order_dofs[2] = 10;
+	order_dofs[3] = 20;
 
 	inp_file >> local_nodes_n >> total_element_n;
 	local_nodes.resize(local_nodes_n);
