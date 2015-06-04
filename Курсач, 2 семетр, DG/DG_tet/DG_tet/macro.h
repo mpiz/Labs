@@ -7,7 +7,7 @@
 
 using namespace std;
 // Для быстрого отключения вывода отладочной информации
-#define DEBUGOUTP
+//#define DEBUGOUTP
 
 //Второй метод построение базиса второго порядка
 //#define O2M2

@@ -5,6 +5,7 @@
 #include <functional>
 #include <cstdio>
 #include <vector>
+#include <iostream>
 #include "cubatures.h"
 
 typedef function<double(double, double, double)> func3d;

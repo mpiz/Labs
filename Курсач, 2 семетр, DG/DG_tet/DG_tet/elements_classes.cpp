@@ -390,7 +390,10 @@ vec3d trelement::grad_basis_3(double x, double y, double z) {
 trface::trface(vector<node> nodes_s) : trelement(nodes_s) {
 	dofs_number = 0;
 	el_count = 0;
+	elements_dofs[0] = 0;
+	elements_dofs[1] = 0;
 	init_cords();
+
 }
 
 void trface::add_element(tetelement* el) {
@@ -456,9 +459,10 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 		mull = 2;
 
 	int count_dof = 0;
-	for(int el_i = 0; el_i < face_el_n; el_i++) {
+	for(int el_i = 0; el_i < el_count; el_i++) {
 		for(int dof_i = 0; dof_i < elements_dofs[el_i]; dof_i++)  {
 			for(int dof_j = 0; dof_j < elements_dofs[el_i]; dof_j++) {
+				//cout << dofs_number << " " << count_dof << " " << dof_i << " " << dof_j << " " << el_count << " "<< el_i <<  endl;
 				A_loc[count_dof+dof_i][count_dof+dof_j] = integrate([&](double x, double y, double z)->double {
 					double phi1, phi2;
 					vec3d v1, v2;
@@ -483,7 +487,7 @@ dyn_matrix trface::get_local_matrix(double lambda) {
 	// Внедиагональные блоки
 	for(int dof1_i = 0; dof1_i < elements_dofs[0]; dof1_i++) {
 		for(int dof2_j = 0; dof2_j < elements_dofs[1]; dof2_j++) {
-
+			//cout << dofs_number << " " << elements_dofs[0] << " " << dof1_i << " " << dof2_j <<  endl;
 			A_loc[dof1_i][elements_dofs[0]+dof2_j] = integrate([&](double x, double y, double z)->double {
 					double phi1, phi2;
 					vec3d v1, v2;

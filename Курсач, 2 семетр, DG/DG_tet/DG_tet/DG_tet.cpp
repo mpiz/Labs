@@ -1,11 +1,36 @@
 #include "DG_tet.h"
 
+const double R = 0.6;
+const point total_cent(0.5, 0.5, 0.5);
+const double Sigma[3] = {10, 10, 10};
+
+
 double solution(double x, double y, double z) {
-	return x*x*x;
+	double t = 0;
+	point p_gl(x, y, z);
+	vec3d shift(p_gl, total_cent);
+
+	for(int i = 0; i < 3; i++)
+		t += Sigma[i] * shift[i];
+
+	return exp(-t);
 }
 
 double right_part(double x, double y, double z) {
-	return -6*x;
+	double t = 0;
+	point p_gl(x, y, z);
+	double div_grad = 0;
+	vec3d shift(p_gl, total_cent);
+	double g_v = 0;
+
+	for(int i = 0; i < 3; i++) {
+		t += Sigma[i] * shift[i];
+		div_grad += (-2) * Sigma[i];
+		g_v += (2 * Sigma[i] * shift[i])*(2 * Sigma[i] * shift[i]);
+	}
+
+	return exp(-t) * g_v - exp(-t) * div_grad;
+
 }
 
 DG_tet::DG_tet() {
@@ -92,6 +117,14 @@ double DG_tet::diff_L2(func3d f) {
 
 	diff = sqrt(diff);
 	f_norm = sqrt(f_norm);
+
+	cout << std::scientific;
+	cout << R << endl << diff << endl << f_norm << endl << diff/f_norm << endl;
+	ofstream outp("diffs.txt", ios_base::app);
+	outp << std::scientific;
+	outp << Sigma[0] << " " << Sigma[1] << " " << Sigma[2] << "\t" << local_dof_n <<"\t"<< R << "\t" << diff <<  "\t" << f_norm <<  "\t" << diff/f_norm << endl;
+	outp.close();
+	system("pause");
 	return diff;
 }
 
@@ -100,5 +133,17 @@ double DG_tet::get_lambda(tetelement& el) {
 }
 
 int DG_tet::get_order(vector<node>& nodes_s) {
+	point cent(0, 0, 0);
+
+	for(int i = 0; i < 4; i++) 
+		for(int j = 0; j < 3; j++)
+			cent[j] += nodes_s[i][j] / 4.0;
+
+	double r = vec3d(cent, total_cent).norm();
+	if (r > R)
+		return 2;
+	else
+		return 3;
+
 	return 3;
 }

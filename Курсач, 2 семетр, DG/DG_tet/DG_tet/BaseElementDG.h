@@ -100,7 +100,7 @@ template<typename elementT, typename faceT> class BaseElement {
 
 	 vector<func3d> basis_right_parts;
 
-	 Gauss solver;
+	 BCG_LU solver;
 
 };
 
@@ -424,6 +424,8 @@ template<typename elementT, typename faceT> template<typename func_t> void BaseE
 
 	}
 
+	cout << "Matrix assablation over\n";
+
 }
 
 template<typename elementT, typename faceT> void BaseElement<elementT, faceT>::input_mesh(string file_name, int valide_code) {
@@ -488,6 +490,8 @@ template<typename elementT, typename faceT> void BaseElement<elementT, faceT>::i
 			elements.push_back(elementT(tr_node, tr_dofs));
 	
 	}
+
 	elements_n = elements.size();
+	cout << "Input over, dofs: " << local_dof_n << endl; 
 
 }
