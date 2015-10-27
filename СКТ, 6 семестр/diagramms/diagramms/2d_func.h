@@ -6,6 +6,7 @@
 #include "solver_MSG.h"
 #include <set>
 #include "Gauss.h"
+#include <omp.h>
 
 //#define NOISE
 

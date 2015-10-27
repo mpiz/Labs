@@ -3,6 +3,8 @@
 #include "2d_func.h"
 #include <conio.h>
 
+const int omp_threads = 4;
+
 void main()
 {
 	//сетка
@@ -11,6 +13,8 @@ void main()
 	//портрет
 	SLAE_port_gen gen_2D;	
 	gen_2D.gen();
+
+	omp_set_num_threads(omp_threads);
 
 	//считываем все данные
 	normal_field_2D NF;

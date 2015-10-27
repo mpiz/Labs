@@ -85,7 +85,7 @@ void normal_field_2D::read_time()
 	fscanf(f, "%lf", &k_r);
 
 	if (k_r == 1)
-		n_time = (tn - t0) / fabs(h_t) + 1;
+		n_time = (int)((tn - t0) / fabs(h_t) + 1);
 	else n_time = log((tn - t0)*(k_r - 1) / fabs(h_t) + 1) / log(k_r) + 1;
 
 
@@ -164,7 +164,6 @@ double normal_field_2D::form_u(double r, double z, int i, int t_i)
 
 double normal_field_2D::form_sigma(double r, double z, int i, int t_i)
 {		
-		double s;
 		if ((z > 0)) return 0;
 		if ((z <= 0 && z > sigma_sol[0])) return sigma_sol[1];
 		if ((z <= sigma_sol[0] && z > sigma_sol[2])) return sigma_sol[3];
@@ -177,7 +176,7 @@ double normal_field_2D::form_sigma(double r, double z, int i, int t_i)
 
 int normal_field_2D::form_area(double r, double z1, double z2)
 {
-	int area;
+//	int area;
 	if (r >= 1.1)
 	{
 		if ((z1 + z2) / 2 > 0) return 1;
@@ -564,6 +563,7 @@ void normal_field_2D::move_inverse()
 		F_old = F_new;
 
 		//cобираем матрицу
+#pragma omp parallel for
 		for (int i = 0; i < 2 * n_sigma; i++)
 		{
 			double** m_rec2 = new double*[n_time];
@@ -824,8 +824,9 @@ void normal_field_2D::move_data_true()
 
 void normal_field_2D::time_calc_matrix(int i_con, double *fsigma, double ** rec, iter_data* it_data)
 {
-	FILE *ff;
+//	FILE *ff;
 	printf("nu begin\n");
+	int th_i = omp_get_thread_num();
 	
 	MSG_my s_MSG;
 
@@ -858,7 +859,7 @@ void normal_field_2D::time_calc_matrix(int i_con, double *fsigma, double ** rec,
 			}
 			double val = Efi_inpoint(r_con, it_data->z_con - 4, it_data);
 			rec[i][i_con] = val;
-			printf("2D calc q0\n");
+			printf("%d 2D calc q0\n", th_i);
 			
 
 
@@ -890,7 +891,7 @@ void normal_field_2D::time_calc_matrix(int i_con, double *fsigma, double ** rec,
 			}
 
 			if (i % 30 == 0 || i == n_time-1)
-				printf("2D calc q%d\n", i);
+				printf("%d 2D calc q%d\n", th_i, i);
 			
 
 
@@ -914,7 +915,7 @@ void normal_field_2D::time_calc_matrix(int i_con, double *fsigma, double ** rec,
 			}
 			double val = Efi_inpoint(r_con, it_data->z_con - 4, it_data);
 			rec[i][i_con] = val;
-			printf("2D calc q1\n");
+			printf("%d 2D calc q1\n", th_i);
 
 		}
 	}
@@ -930,9 +931,11 @@ int normal_field_2D::moving_controle(double *fsigma, double ** rec)
 	iter_data it_data;
 	init_iter_data(&it_data);
 
+	int th_i = omp_get_thread_num();
+
 	for (int i = 0; i < n_con; i++)
 	{ 
-		printf("Starter calc z = %lf\n", it_data.z_con);
+		printf("%d started calc z = %lf\n", th_i, it_data.z_con);
 		time_calc_matrix(i, fsigma, rec, &it_data);
 		it_data.z_con -= hcon;
 	}
@@ -1055,9 +1058,6 @@ double normal_field_2D::Efi_inpoint(double r, double z, iter_data* it_data)
 
 void normal_field_2D::Efi(int t_i, iter_data* it_data)
 {
-	int n;
-	double r, z;
-
 	
 		if (t_i == 0)
 		{
