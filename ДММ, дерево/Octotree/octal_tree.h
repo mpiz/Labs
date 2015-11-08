@@ -5,7 +5,11 @@
 #include <cstdio>
 #include <cmath>
 
+#define OUTPINFO
+
 using namespace std;
+
+static int max_level;	// ¬спомогательна€ переменна€, дл€ вывода кол-ва уровней, в алгоритме не используетс€
 
 /*
 Ќебольша€ документаци€ классов. ƒва шаблона образуют восьмиричное дерево.
@@ -71,6 +75,8 @@ template<class element_type> int octal_tree_node<element_type>::get_level() {
 
 template<class element_type> void octal_tree_node<element_type>::set_level(int level_s) {
 	level = level_s;
+	if (level > max_level)
+		max_level = level;
 }
 
 template<class element_type> void octal_tree_node<element_type>::init_node(double x0_s, double x1_s, double y0_s, double y1_s, double z0_s, double z1_s, int split_constant_s, int level_barier_s) {
@@ -92,7 +98,7 @@ template<class element_type> bool octal_tree_node<element_type>::point_in_node(d
 }
 
 template<class element_type> bool octal_tree_node<element_type>::split_condition() {
-	if(elements_n + 1 == split_constant &&  fabs(x1 - x0) > 1e-8 && fabs(y1 - y0) > 1e-8 && fabs(z1 - z0) > 1e-8 && level > level_barier)
+	if(elements_n + 1 == split_constant &&  fabs(x1 - x0) > 1e-8 && fabs(y1 - y0) > 1e-8 && fabs(z1 - z0) > 1e-8 && level < level_barier)
 		return true;
 	return false;
 
@@ -129,10 +135,14 @@ template<class element_type> bool octal_tree_node<element_type>::add_element(ele
 
 template<class element_type> void octal_tree_node<element_type>::add_element(vector<element_type*>& added_elements) {
 
-	for(int i = 0 ; i < added_elements.size(); i++) {
-		if(i == 42)
-			i = i;
+	int el_size =  added_elements.size();
+
+	for(int i = 0 ; i < el_size; i++) {
 		add_element(added_elements[i]);
+#ifdef OUTPINFO
+		if ((i%1000 == 0 || i == el_size-1) && level == 0) 
+			cout << "\t" << i << "\t\\" << el_size << "\n";
+#endif
 	}
 
 }
@@ -181,8 +191,9 @@ template<class element_type> element_type* octal_tree_node<element_type>::find_p
 }
 
 template<class element_type> void octal_tree<element_type>::construct_tree(double x0, double x1, double y0, double y1, double z0, double z1, vector<element_type>& elements) {
+	max_level = 0;
 	total_n = elements.size();
-	split_constant = sqrt(total_n);
+	split_constant = (int) sqrt(total_n);
 	int level_barier = log(total_n) / log(2.0) + 5; 
 	root_node.init_node(x0, x1, y0, y1, z0, z1, split_constant, level_barier);
 	root_node.set_level(0);
@@ -191,6 +202,9 @@ template<class element_type> void octal_tree<element_type>::construct_tree(doubl
 		el_v.push_back(&elements[i]);
 	}
 	root_node.add_element(el_v);
+#ifdef OUTPINFO
+	cout << "Tree levels: " << max_level << "\nMax elements on level: " << split_constant << "\nLevel basier: " << level_barier << endl;
+#endif
 }
 
 template<class element_type> element_type* octal_tree<element_type>::find_point(double x, double y, double z) {

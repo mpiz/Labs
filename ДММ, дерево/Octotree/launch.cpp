@@ -1,5 +1,6 @@
 #include "VFEM_E.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 
 int main() {
@@ -8,19 +9,33 @@ int main() {
 	VFEM_E octtree;
 	octtree.input_mesh("web.msh");
 
+	int samples_n = 1e4;
 	double x, y, z;
+	double tree_time = 0, linear_time = 0;
+	double tt_iter, lt_iter;
 
-	x = rand()%100 * 0.1 / 100 - 0.05;
-	y = rand()%100 * 0.04 / 100 - 0.2;
-	z = rand()%100 * 0.02 / 100 - 0.01;
+	ofstream outp_info("iters_info.txt");
 
-	cout << "Searching for:\nx=" << x << "\ny=" << y << "\nz=" << z << endl;
-	cout << "Using tree: ";
+	srand(GetTickCount());
 
-	double tree_time = octtree.function_in_point_tree(x, y, z);
-	cout << tree_time << "\nUsing linear method: ";
-	double linear_time = octtree.function_in_point_linear(x, y, z);
-	cout << linear_time;
+	for (int i = 0; i < samples_n; i++) {
+
+		x = rand()%100 * 1.0 / 100;
+		y = rand()%100 * 1.0 / 100;
+		z = rand()%100 * 1.0 / 100;
+
+		tt_iter = octtree.function_in_point_tree(x, y, z);
+		lt_iter = octtree.function_in_point_linear(x, y, z);
+
+		tree_time += tt_iter;
+		linear_time += lt_iter;
+
+		outp_info << i << "\t" << x << "\t" << y << "\t" << z << "\t" << tt_iter << "\t" << lt_iter << endl;
+	}
+
+	printf("Avg time, tree method: %.3e, Full time: %.3e\n", tree_time / samples_n, tree_time);
+	printf("Avg time, linear method: %.3e, Full time: %.3e\n", linear_time / samples_n, linear_time);
+	outp_info.close();
 
 	system("pause");
 

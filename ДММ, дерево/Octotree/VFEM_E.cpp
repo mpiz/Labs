@@ -1,6 +1,20 @@
 #include "VFEM_E.h"
 
-#include "stdio.h"
+//#if defined _WIN32
+//#include <windows.h>
+//long mtime()
+//{
+//    return GetTickCount();
+//}
+//#else
+//#include <ctime>
+//long mtime()
+//{
+//    struct timespec t;
+//    clock_gettime(CLOCK_MONOTONIC, & t);
+//    return (long)t.tv_sec * 1000 + t.tv_nsec / 1000000;
+//}
+//#endif
 
 const int triangle_el = 2;
 const int tethedron_el = 4;
@@ -10,10 +24,20 @@ const int tethedron_el = 4;
 void VFEM_E::input_mesh(string inp_file) {
 	ifstream inp_f(inp_file.c_str());
 
+	if (!inp_f.is_open())
+		throw;
+
+	cout << "Skiping to nodes\n";
+	string read_str;
+	while(read_str != "$Nodes")
+		inp_f >> read_str;
+
 	//Считывание узлов
 	inp_f >> nodes_n;
 
 	node read_n;
+
+	cout << "Reading nodes. Total nodes: " << nodes_n << "\n";
 
 	for(int i = 0; i < nodes_n; i++) {
 		inp_f >> read_n;
@@ -21,8 +45,8 @@ void VFEM_E::input_mesh(string inp_file) {
 		nodes.push_back(read_n);
 	}
 
+	cout << "Skiping to elements\n";
 	//Пролистываем
-	string read_str;
 	while(read_str != "$Elements")
 		inp_f >> read_str;
 
@@ -33,11 +57,11 @@ void VFEM_E::input_mesh(string inp_file) {
 	int ph_area;
 	int params_n;
 	array<int, 3> trnode;
-	array<int, 3> tredge;
 	array<int, 4> tetnode;
-	array<int, 6> tetedge;
 
 	elements.reserve(total_els);
+
+	cout << "Reading elements\n";
 	
 	for(int iter = 0; iter < total_els; iter++) {
 		inp_f >> tmp_int >> el_type;
@@ -80,7 +104,12 @@ void VFEM_E::input_mesh(string inp_file) {
 
 		}; 
 
+		if (iter%10000 == 0 || iter == total_els-1) {
+			cout << "\t" << iter << "\t\\" << total_els << "\n";
+		}
+
 	}
+	cout << endl;
 
 	elements_n = elements.size();
 
@@ -102,19 +131,36 @@ void VFEM_E::input_mesh(string inp_file) {
 
 double VFEM_E::function_in_point_tree(double x, double y, double z) {
 
-	double search_time;
+	LARGE_INTEGER start, stop, timetime, fr;
+	double time;
+	QueryPerformanceFrequency(&fr);
+	QueryPerformanceCounter(&start);
+
 	tetelement* point_el = search_tree.find_point(x, y, z);
-	return search_time;
+
+	QueryPerformanceCounter(&stop);
+	timetime.QuadPart = stop.QuadPart - start.QuadPart;
+	time = (double)timetime.QuadPart / (double)fr.QuadPart;
+
+	return time;
 
 }
 
 double VFEM_E::function_in_point_linear(double x, double y, double z) {
 
-	double search_time;
+	LARGE_INTEGER start, stop, timetime, fr;
+	double time;
+	QueryPerformanceFrequency(&fr);
+	QueryPerformanceCounter(&start);
+
 	for (int el_i = 0; el_i < elements_n; el_i++) {
 		if (elements[el_i].in_element(x,y,z))
 			break;
 	}
-	return search_time;
+	QueryPerformanceCounter(&stop);
+	timetime.QuadPart = stop.QuadPart - start.QuadPart;
+	time = (double)timetime.QuadPart / (double)fr.QuadPart;
+
+	return time;
 
 }
