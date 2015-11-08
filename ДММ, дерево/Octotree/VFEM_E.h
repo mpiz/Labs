@@ -8,10 +8,6 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include <algorithm>
-#include <map>
-#include <set>
-#include <sstream>
 
 using namespace std;
 
@@ -25,8 +21,8 @@ struct media {
 class VFEM_E {
  public:
 	 void input_mesh(string inp_file);
-	 vec3d function_in_point(double x, double y, double z);
-
+	 double function_in_point_tree(double x, double y, double z);
+	 double function_in_point_linear(double x, double y, double z);
 
  private:
 
@@ -37,7 +33,7 @@ class VFEM_E {
 	 vector<node> nodes;
 	 vector<tetelement> elements;
 
-	octal_tree<tetelement> search_tree;
+	 octal_tree<tetelement> search_tree;
 
 };
 

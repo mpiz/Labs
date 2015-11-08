@@ -100,26 +100,21 @@ void VFEM_E::input_mesh(string inp_file) {
 }
 
 
-vec3d VFEM_E::function_in_point(double x, double y, double z) {
+double VFEM_E::function_in_point_tree(double x, double y, double z) {
 
+	double search_time;
 	tetelement* point_el = search_tree.find_point(x, y, z);
-	if(point_el != NULL) {
-		int loc_dof[12];
-			for(int i = 0; i < 6; i++) {
-				loc_dof[i] = (*point_el)[i];
-				loc_dof[i+6] = (*point_el)[i] + edges_n;
-			}
-			vec3d val(0,0,0);
-
-			for(int i = 0; i < 12; i++) {
-				vec3d basis_v = point_el->basis_v(i, x, y, z);
-				val = val + solution[loc_dof[i]] * basis_v;
-			}
-
-			return val;
-
-	}
-	return vec3d(0,0,0);
+	return search_time;
 
 }
 
+double VFEM_E::function_in_point_linear(double x, double y, double z) {
+
+	double search_time;
+	for (int el_i = 0; el_i < elements_n; el_i++) {
+		if (elements[el_i].in_element(x,y,z))
+			break;
+	}
+	return search_time;
+
+}
