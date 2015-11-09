@@ -36,13 +36,14 @@ void VFEM_E::input_mesh(string inp_file) {
 	inp_f >> nodes_n;
 
 	node read_n;
+	nodes.reserve(nodes_n);
 
 	cout << "Reading nodes. Total nodes: " << nodes_n << "\n";
 
 	for(int i = 0; i < nodes_n; i++) {
 		inp_f >> read_n;
 		read_n.number--;
-		nodes.push_back(read_n);
+		nodes[i]  = read_n;
 	}
 
 	cout << "Skiping to elements\n";
@@ -59,9 +60,9 @@ void VFEM_E::input_mesh(string inp_file) {
 	array<int, 3> trnode;
 	array<int, 4> tetnode;
 
-	elements.reserve(total_els);
+	cout << "Reading elements: " << total_els << endl << "Size of element: " << sizeof(tetelement) << endl;
 
-	cout << "Reading elements\n";
+	elements.reserve(total_els);
 	
 	for(int iter = 0; iter < total_els; iter++) {
 		inp_f >> tmp_int >> el_type;
@@ -98,9 +99,7 @@ void VFEM_E::input_mesh(string inp_file) {
 
 			elements.push_back(tetelement(nodes[tetnode[0]], nodes[tetnode[1]], nodes[tetnode[2]], nodes[tetnode[3]]));
 			int add_num = elements.size() - 1;
-			elements[add_num].set_ph_area(ph_area);
-
-			} break;
+		} break;
 
 		}; 
 

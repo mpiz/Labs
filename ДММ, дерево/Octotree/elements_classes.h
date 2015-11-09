@@ -112,16 +112,6 @@ class tetelement {
 
 	 int& operator [] (int i); //получить i-ое локальное ребро
 
-	 cmatrix(12) get_local_matrix(double mu, dcomplex k_sq);
-	 cmatrix(10) get_local_kernel_matrix(dcomplex k_sq);
-	 matrix(12) get_local_M();
-	 recmatrix(10,12) get_local_R();
-	 array<dcomplex, 12> get_local_right_part(vfunc3d rp_func);
-
-	 dcomplex integrate(func3d integ_func);
-
-	 int get_ph_area();
-	 void set_ph_area(int sph_area);
 
 	 node get_local_node(int i);
 	 point get_center();
@@ -134,62 +124,18 @@ class tetelement {
 
  private:
 
-	 tet_bfunc basis[12];
-	 tet_bfunc basis_rotors[6];
-	 tet_bfunc kernel_basis[10];
-
 	 void init_coords();
 	 void generate_L_cords();
-	 void calculate_M_matrix();
 
 	 double lambda(int i, point p_glob);	//значение i-й L-координаты в точке
 	 vec3d grad_lambda(int i);	//градиент i-й L-координаты
 
-	 //Роторные базисные функции
-	 vec3d w1(point p_glob);	//0, 1
-	 vec3d w2(point p_glob);	//0, 2
-	 vec3d w3(point p_glob);	//0, 3
-	 vec3d w4(point p_glob);	//1, 2
-	 vec3d w5(point p_glob);	//1, 3
-	 vec3d w6(point p_glob);	//2, 3
-
-	 //Градиентые базисные функции
-	 vec3d w7(point p_glob);
-	 vec3d w8(point p_glob);
-	 vec3d w9(point p_glob);
-	 vec3d w10(point p_glob);
-	 vec3d w11(point p_glob);
-	 vec3d w12(point p_glob);
-
-	 //Роторы функций
-	 vec3d rotw1(point p_glob);
-	 vec3d rotw2(point p_glob);
-	 vec3d rotw3(point p_glob);
-	 vec3d rotw4(point p_glob);
-	 vec3d rotw5(point p_glob);
-	 vec3d rotw6(point p_glob);
-
-	 //Градиенты узловых функций первого порядка
-	 vec3d gradphi1(point p_glob);
-	 vec3d gradphi2(point p_glob);
-	 vec3d gradphi3(point p_glob);
-	 vec3d gradphi4(point p_glob);
-
 	 array<node,4> node_array;
-	 array<int,6> edge_array;
-
-	 int ph_area; //физическая область
 
 
 	 matrix(4) D_matrix, L_cord_matrix; //L - матрица L-координат, D - её обратнная
 	 //i - строка за i-ю координану, коэф соответсенно x,y,z,1
 	 double det_D; //опеределитель матрицы L-координат
-	 matrix(12) M_matrix;
-
-	  point gauss_points[gauss_points_tet]; //точки для интегрирования по Гауссу
-	  double gauss_weights[gauss_points_tet];
-	  double jacobian; //якобиан для вычиления интеграла
-
 	  //для построения дерева
 	  array<double, 3> ch_points[5];
 	  double edges_a[6][3], edges_b[6][3];

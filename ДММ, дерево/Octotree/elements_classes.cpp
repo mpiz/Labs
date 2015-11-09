@@ -376,18 +376,7 @@ tetelement::tetelement(node n1, node n2, node n3, node n4) {
 	init_coords();
 }
 
-int& tetelement::operator [] (int i) {
-	return edge_array[i];
-}
 
-
-int tetelement::get_ph_area() {
-	return ph_area;
-}
-
-void tetelement::set_ph_area(int sph_area) {
-	ph_area = sph_area;
-}
 
 node tetelement::get_local_node(int i) {
 	return node_array[i];
@@ -401,21 +390,6 @@ point tetelement::get_center() {
 
 	return cent;
 
-}
-
-vec3d tetelement::basis_v(int i, double x, double y, double z) {
-	point p_glob(x,y,z);
-	return (this->*basis[i])(p_glob); 
-}
-
-
-vec3d tetelement::basis_rot_v(int i, double x, double y, double z) {
-	if(i < 6) {
-		point p_glob(x,y,z);
-		return (this->*basis_rotors[i])(p_glob);
-	}
-	else
-		return vec3d(0,0,0);
 }
 
 bool tetelement::in_element(double x, double y, double z) {
@@ -483,39 +457,6 @@ bool tetelement::valid_for_tree_node(double x0, double x1, double y0, double y1,
 
 void tetelement::init_coords() {
 
-	//формирование базиса в виде массива функций
-	basis[0] = &tetelement::w1;
-	basis[1] = &tetelement::w2;
-	basis[2] = &tetelement::w3;
-	basis[3] = &tetelement::w4;
-	basis[4] = &tetelement::w5;
-	basis[5] = &tetelement::w6;
-
-	basis[6] = &tetelement::w7;
-	basis[7] = &tetelement::w8;
-	basis[8] = &tetelement::w9;
-	basis[9] = &tetelement::w10;
-	basis[10] = &tetelement::w11;
-	basis[11] = &tetelement::w12;
-
-	basis_rotors[0] = &tetelement::rotw1;
-	basis_rotors[1] = &tetelement::rotw2;
-	basis_rotors[2] = &tetelement::rotw3;
-	basis_rotors[3] = &tetelement::rotw4;
-	basis_rotors[4] = &tetelement::rotw5;
-	basis_rotors[5] = &tetelement::rotw6;
-
-	kernel_basis[0] = &tetelement::gradphi1;
-	kernel_basis[1] = &tetelement::gradphi2;
-	kernel_basis[2] = &tetelement::gradphi3;
-	kernel_basis[3] = &tetelement::gradphi4;
-
-	kernel_basis[4] = &tetelement::w7;
-	kernel_basis[5] = &tetelement::w8;
-	kernel_basis[6] = &tetelement::w9;
-	kernel_basis[7] = &tetelement::w10;
-	kernel_basis[8] = &tetelement::w11;
-	kernel_basis[9] = &tetelement::w12;
 
 
 	//расчёт L-координат
@@ -527,8 +468,6 @@ void tetelement::init_coords() {
 		D_matrix[3][i] = 1;
 
 	L_cord_matrix = inverse4(D_matrix, det_D);
-
-	jacobian = fabs(det_D);
 
 	//Точки Гаусса на мастер-элементе
 	double gauss_a = (5.0 - sqrt(5.0)) / 20.0;
@@ -554,22 +493,6 @@ void tetelement::init_coords() {
 	Gauss_cord[0][3] = 1 - 3*gauss_a;
 	Gauss_cord[1][3] = Gauss_cord[2][3] = Gauss_cord[3][3] = gauss_a;
 
-	//Перевод на текущий тетраэдр
-
-	for(int i = 0; i < 4; i++) {
-		for(int j = 0 ; j < gauss_points_tet; j++) {
-			Gauss_cord_gl[i][j] = 0;
-			for(int k = 0; k < 4; k++)
-				Gauss_cord_gl[i][j] += D_matrix[i][k] * Gauss_cord[k][j];
-		}
-	}
-
-	for(int i = 0; i < 4; i++)
-		for(int j = 0; j < 3; j++)
-			gauss_points[i][j] = Gauss_cord_gl[j][i];
-
-	for(int i = 0; i < gauss_points_tet; i++)
-		gauss_weights[i] = 1.0 / 24.0;
 
 	//Ниже - для данные для построения дерева поиска
 
@@ -618,217 +541,4 @@ double tetelement::lambda(int i, point p_glob) {
 
 	return res;
 
-}
-
-dcomplex tetelement::integrate(func3d integ_func) {
-
-	dcomplex res = 0;
-	for(int i = 0; i < gauss_points_tet; i++) {
-		dcomplex func_v = integ_func(gauss_points[i].x, gauss_points[i].y, gauss_points[i].z);
-		res += gauss_weights[i] * func_v;
-	}
-
-	res *= jacobian;
-
-	return res;
-
-}
-
-void tetelement::calculate_M_matrix() {
-
-	for(int i = 0; i < 12; i++) {
-		for(int j = 0; j < 12; j++) {
-			M_matrix[i][j] = integrate([&](double x, double y, double z)->dcomplex {
-				point p_glob(x,y,z);
-				return (this->*basis[i])(p_glob) * (this->*basis[j])(p_glob);
-			}).real();
-		}
-	}
-
-}
-
-cmatrix(12) tetelement::get_local_matrix(double mu, dcomplex k_sq) {
-	cmatrix(12) A_loc;
-
-	for(int i = 0; i < 12; i++)
-		for(int j = 0; j < 12; j++)
-			A_loc[i][j] = 0;
-
-	for(int i = 0; i < 6; i++) {
-		for(int j = 0; j < 6; j++) {
-			A_loc[i][j] = integrate([&](double x, double y, double z)->dcomplex{
-				point p_glob(x,y,z);
-				return (this->*basis_rotors[i])(p_glob) * (this->*basis_rotors[j])(p_glob) / mu;
-			});
-			A_loc[j][i] = A_loc[i][j];
-		}
-	}
-
-	for(int i = 0; i < 12; i++) {
-		for(int j = 0; j < 12; j++) {
-			A_loc[i][j] += integrate([&](double x, double y, double z)->dcomplex {
-				point p_glob(x,y,z);
-				return k_sq * (this->*basis[i])(p_glob) * (this->*basis[j])(p_glob);
-			});
-		}
-	}
-
-	return A_loc; 
-}
-
-cmatrix(10) tetelement::get_local_kernel_matrix(dcomplex k_sq) {
-	cmatrix(10) A_loc;
-
-	for(int i = 0; i < 10; i++) {
-		for(int j = 0; j < 10; j++) {
-			A_loc[i][j] = integrate([&](double x, double y, double z)->dcomplex {
-				point p_glob(x,y,z);
-				return k_sq * (this->*kernel_basis[i])(p_glob) * (this->*kernel_basis[j])(p_glob);
-			});
-		}
-	}
-
-	return A_loc; 
-}
-
-matrix(12) tetelement::get_local_M() {
-
-	return M_matrix; 
-}
-
-array<dcomplex, 12> tetelement::get_local_right_part(vfunc3d rp_func) {
-	array<dcomplex, 12> b_loc;
-
-	for(int i = 0; i < 12; i++)
-		b_loc[i] = integrate([&](double x, double y, double z)->dcomplex{
-			point p_glob(x,y,z);
-			return rp_func(x,y,z) * (this->*basis[i])(p_glob);
-	});
-
-	return b_loc;
-
-}
-
-recmatrix(10,12) tetelement::get_local_R() {
-	recmatrix(10,12) R_loc;
-	const int kernel_dim = 10;
-
-	for(int i = 0; i < 10; i++)
-		for(int j = 0; j < 12; j++)
-			R_loc[i][j] = 0;
-
-	R_loc[0][0] = R_loc[0][1] = R_loc[0][2] = -1;
-	R_loc[1][0] = 1;	R_loc[1][3] = R_loc[1][4] = R_loc[1][5] = -1;
-	R_loc[2][1] = R_loc[2][3] = 1;	R_loc[2][5] = -1;
-	R_loc[3][2] = R_loc[3][4] = R_loc[3][5] = 1;
-
-	for(int i = 0; i < 6; i++)
-		R_loc[i+4][i+6] = 1;
-			
-
-	return R_loc;
-}
-
-
-// == Базисные функции ==
-
-vec3d tetelement::grad_lambda(int i) {
-	return vec3d(L_cord_matrix[i][0], L_cord_matrix[i][1], L_cord_matrix[i][2]);
-}
-
-vec3d tetelement::w1(point p_glob) {
-	double lambdas[2] = {lambda(0, p_glob), lambda(1, p_glob)};
-	vec3d grads[2] = {grad_lambda(1), grad_lambda(0)};
-	return lambda(0, p_glob) * grad_lambda(1) - lambda(1, p_glob) * grad_lambda(0);
-}
-
-vec3d tetelement::w2(point p_glob) {
-	return lambda(0, p_glob) * grad_lambda(2) - lambda(2, p_glob) * grad_lambda(0);
-}
-
-vec3d tetelement::w3(point p_glob) {
-	return lambda(0, p_glob) * grad_lambda(3) - lambda(3, p_glob) * grad_lambda(0);
-}
-
-vec3d tetelement::w4(point p_glob) {
-	return lambda(1, p_glob) * grad_lambda(2) - lambda(2, p_glob) * grad_lambda(1);
-}
-
-vec3d tetelement::w5(point p_glob) {
-	return lambda(1, p_glob) * grad_lambda(3) - lambda(3, p_glob) * grad_lambda(1);
-}
-
-vec3d tetelement::w6(point p_glob) {
-	return lambda(2, p_glob) * grad_lambda(3) - lambda(3, p_glob) * grad_lambda(2);
-}
-
-
-vec3d tetelement::w7(point p_glob) {
-	return lambda(0, p_glob) * grad_lambda(1) + lambda(1, p_glob) * grad_lambda(0);
-}
-
-vec3d tetelement::w8(point p_glob) {
-	return lambda(0, p_glob) * grad_lambda(2) + lambda(2, p_glob) * grad_lambda(0);
-}
-
-vec3d tetelement::w9(point p_glob) {
-	return lambda(0, p_glob) * grad_lambda(3) + lambda(3, p_glob) * grad_lambda(0);
-}
-
-vec3d tetelement::w10(point p_glob) {
-	return lambda(1, p_glob) * grad_lambda(2) + lambda(2, p_glob) * grad_lambda(1);
-}
-
-vec3d tetelement::w11(point p_glob) {
-	return lambda(1, p_glob) * grad_lambda(3) + lambda(3, p_glob) * grad_lambda(1);
-}
-
-vec3d tetelement::w12(point p_glob) {
-	return lambda(2, p_glob) * grad_lambda(3) + lambda(3, p_glob) * grad_lambda(2);
-}
-
-vec3d tetelement::rotw1(point p_glob) {
-	vec3d grad1 = grad_lambda(0), grad2 = grad_lambda(1);
-	return 2 * grad1.cross(grad2);
-}
-
-vec3d tetelement::rotw2(point p_glob) {
-	vec3d grad1 = grad_lambda(0), grad2 = grad_lambda(2);
-	return 2 * grad1.cross(grad2);
-}
-
-vec3d tetelement::rotw3(point p_glob) {
-	vec3d grad1 = grad_lambda(0), grad2 = grad_lambda(3);
-	return 2 * grad1.cross(grad2);
-}
-
-vec3d tetelement::rotw4(point p_glob) {
-	vec3d grad1 = grad_lambda(1), grad2 = grad_lambda(2);
-	return 2 * grad1.cross(grad2);
-}
-
-vec3d tetelement::rotw5(point p_glob) {
-	vec3d grad1 = grad_lambda(1), grad2 = grad_lambda(3);
-	return 2 * grad1.cross(grad2);
-}
-
-vec3d tetelement::rotw6(point p_glob) {
-	vec3d grad1 = grad_lambda(2), grad2 = grad_lambda(3);
-	return 2 * grad1.cross(grad2);
-}
-
-vec3d tetelement::gradphi1(point p_glob) {
-	return grad_lambda(0);
-}
-
-vec3d tetelement::gradphi2(point p_glob) {
-	return grad_lambda(1);
-}
-
-vec3d tetelement::gradphi3(point p_glob) {
-	return grad_lambda(2);
-}
-
-vec3d tetelement::gradphi4(point p_glob) {
-	return grad_lambda(3);
 }
