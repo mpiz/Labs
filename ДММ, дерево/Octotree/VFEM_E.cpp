@@ -36,7 +36,7 @@ void VFEM_E::input_mesh(string inp_file) {
 	inp_f >> nodes_n;
 
 	node read_n;
-	nodes.reserve(nodes_n);
+	nodes.resize(nodes_n);
 
 	cout << "Reading nodes. Total nodes: " << nodes_n << "\n";
 
@@ -127,23 +127,22 @@ void VFEM_E::input_mesh(string inp_file) {
 	cout << "Search tree construct complete" << endl;
 }
 
+#pragma optimize( "", off )
+tetelement* VFEM_E::function_in_point_tree(double x, double y, double z) {
 
-double VFEM_E::function_in_point_tree(double x, double y, double z) {
-
-	LARGE_INTEGER start, stop, timetime, fr;
+/*	LARGE_INTEGER start, stop, timetime, fr;
 	double time;
 	QueryPerformanceFrequency(&fr);
-	QueryPerformanceCounter(&start);
+	QueryPerformanceCounter(&start);*/
 
 	tetelement* point_el = search_tree.find_point(x, y, z);
 
-	QueryPerformanceCounter(&stop);
+/*	QueryPerformanceCounter(&stop);
 	timetime.QuadPart = stop.QuadPart - start.QuadPart;
-	time = (double)timetime.QuadPart / (double)fr.QuadPart;
-
-	return time;
-
+	time = (double)timetime.QuadPart / (double)fr.QuadPart;*/
+	return point_el;
 }
+#pragma optimize( "", on )
 
 double VFEM_E::function_in_point_linear(double x, double y, double z) {
 

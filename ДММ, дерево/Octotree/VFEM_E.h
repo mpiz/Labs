@@ -22,7 +22,7 @@ struct media {
 class VFEM_E {
  public:
 	 void input_mesh(string inp_file);
-	 double function_in_point_tree(double x, double y, double z);
+	 tetelement* function_in_point_tree(double x, double y, double z);
 	 double function_in_point_linear(double x, double y, double z);
 
  private:

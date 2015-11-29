@@ -9,8 +9,8 @@ int main() {
 	VFEM_E octtree;
 	octtree.input_mesh("web.msh");
 
-	int samples_n = 1e4;
-	double x, y, z;
+	int samples_n = 1e6;
+	//double x, y, z;
 	double tree_time = 0, linear_time = 0;
 	double tt_iter, lt_iter;
 
@@ -18,23 +18,34 @@ int main() {
 
 	srand(GetTickCount());
 
-	for (int i = 0; i < samples_n; i++) {
-
-		x = rand()%100 * 1.0 / 100;
-		y = rand()%100 * 1.0 / 100;
-		z = rand()%100 * 1.0 / 100;
-
-		tt_iter = octtree.function_in_point_tree(x, y, z);
-		lt_iter = octtree.function_in_point_linear(x, y, z);
-
-		tree_time += tt_iter;
-		linear_time += lt_iter;
-
-		outp_info << i << "\t" << x << "\t" << y << "\t" << z << "\t" << tt_iter << "\t" << lt_iter << endl;
+	vector<double> x, y, z;
+	x.resize(samples_n);
+	y.resize(samples_n);
+	z.resize(samples_n);
+	for(int i = 0; i < samples_n; i++) {
+		x[i] = rand()%100 * 1.0 / 100;
+		y[i] = rand()%100 * 1.0 / 100;
+		z[i] = rand()%100 * 1.0 / 100;
 	}
 
+	LARGE_INTEGER start, stop, timetime, fr;
+	QueryPerformanceFrequency(&fr);
+	QueryPerformanceCounter(&start);
+
+//	getchar();
+
+
+	for (int i = 0; i < samples_n; i++) {
+		auto el = octtree.function_in_point_tree(x[i], y[i], z[i]);
+	}
+
+
+	QueryPerformanceCounter(&stop);
+	timetime.QuadPart = stop.QuadPart - start.QuadPart;
+	tree_time = (double)timetime.QuadPart / (double)fr.QuadPart;
+
 	printf("Avg time, tree method: %.3e, Full time: %.3e\n", tree_time / samples_n, tree_time);
-	printf("Avg time, linear method: %.3e, Full time: %.3e\n", linear_time / samples_n, linear_time);
+	//printf("Avg time, linear method: %.3e, Full time: %.3e\n", linear_time / samples_n, linear_time);
 	outp_info.close();
 
 	system("pause");
