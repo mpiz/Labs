@@ -35,6 +35,7 @@ void VFEM_E::input_mesh(string inp_file) {
 	//—читывание узлов
 	inp_f >> nodes_n;
 
+	cout << "Nodes memory: " << sizeof(node) * nodes_n << endl;
 	node read_n;
 	nodes.resize(nodes_n);
 
