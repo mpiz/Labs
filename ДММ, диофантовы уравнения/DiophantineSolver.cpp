@@ -1,9 +1,11 @@
 #include "DiophantineSolver.h"
 
 void DiophantineSolver::input(string file_name) {
+#ifdef IOFILE
 	ifstream inp_file(file_name);
+#endif
 
-	inp_file >> m >> n;
+	inp(inp_file) >> m >> n;
 
 	full_matrix_n = n + 1;
 	full_matrix_m = m + n;
@@ -11,7 +13,7 @@ void DiophantineSolver::input(string file_name) {
 	for(int i = 0; i < m; i++) {
 		matrix_A[i].resize(full_matrix_n);
 		for(int j = 0; j < full_matrix_n; j++)
-			inp_file >> matrix_A[i][j];
+			inp(inp_file) >> matrix_A[i][j];
 		matrix_A[i][n] *= -1;
 	}
 
@@ -21,34 +23,38 @@ void DiophantineSolver::input(string file_name) {
 		for(int j = 0; j < full_matrix_n; j++)
 			matrix_A[i][j] = (i-m) == j ? 1 : 0;
 	}
-
+#ifdef IOFILE
 	inp_file.close();
-
+#endif
 }
 
 void DiophantineSolver::output(string file_name) {
+#ifdef IOFILE
 	ofstream outp_file(file_name);
+#endif
 
 	if (solution_result) {
 
-		outp_file << s << endl;
+		outp(outp_file) << s << endl;
 		for(int i = 0; i < n; i++) {
 			// В каждой строке s+1 число: частное решение и s коэфф-тов при свободных переменных
-			outp_file << matrix_A[m + i][n];
+			outp(outp_file) << matrix_A[m + i][n];
 			if(s > 0) {
-				outp_file << " ";
+				outp(outp_file) << " ";
 				for(int j = 0; j < s - 1; j++)
-					outp_file << matrix_A[m + i][n - s + j] << " ";
-				outp_file << matrix_A[m + i][n - 1] << endl;
+					outp(outp_file) << matrix_A[m + i][n - s + j] << " ";
+				outp(outp_file) << matrix_A[m + i][n - 1] << endl;
 			}
 			else
-				outp_file << endl;
+				outp(outp_file) << endl;
 		}
 	}
 	else
-		outp_file << "Error!" << endl;
+		outp(outp_file) << "NO" << endl;
 
+#ifdef IOFILE
 	outp_file.close();
+#endif
 
 }
 

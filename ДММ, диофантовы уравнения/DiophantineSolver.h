@@ -3,6 +3,20 @@
 #include <fstream>
 #include <utility>
 #include <limits>
+#include <iostream>
+
+//#define IOFILE
+
+#ifdef IOFILE
+#define inp(x) x
+#define outp(x) x
+#define filestr(x) x
+#else
+#define inp(x) cin
+#define outp(x) cout
+#define filestr(x) ""
+#endif
+
 
 using namespace std;
 
