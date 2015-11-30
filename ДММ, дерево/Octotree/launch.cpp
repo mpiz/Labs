@@ -7,7 +7,7 @@ int main() {
 
 
 	VFEM_E octtree;
-	octtree.input_mesh("web_spl2");
+	octtree.input_mesh("web.msh");
 
 	int samples_n = 1e6;
 	//double x, y, z;
