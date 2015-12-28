@@ -1,6 +1,7 @@
 #include "IntegralEq.h"
 
 const double pi = 4 * atan(1.0);
+const double mu0 = 4 * pi * 1e-7;
 
 void IntegralEq::set_env(double w_s, double sigma_0_s, double sigma_1_s, point obj_b, point obj_t) {
 	w = w_s;
@@ -29,9 +30,9 @@ void IntegralEq::set_env(double w_s, double sigma_0_s, double sigma_1_s, point o
 }
 
 bool IntegralEq::in_object(double x, double y, double z) {
-	return x >= -100 && x <= 100 &&
-		y >= -100 && y <= 100 &&
-		z >= -10 && z <= -2;
+	return x >= object_bottom.x && x <= object_top.x &&
+		y >= object_bottom.y && y <= object_top.y &&
+		z >= object_bottom.z && z <= object_top.z;
 
 }
 
@@ -48,12 +49,15 @@ void IntegralEq::input_mesh(string file_name) {
 		i--;
 		nodes.push_back(node(x, y, z, i));
 	}
+	cout << "Reading meth: reading nodes completed\n";
 
 	dofs_n = 0;
-	for(size_t el_i = 0; el_i < all_elements_n; el_i++) {
+	for(size_t el_i = 0; el_i < all_elements_n && !inp_f.eof(); el_i++) {
 		vector<node> el_nodes;
 		vector<dof_type> el_dofs;
 		el_nodes.reserve(8);
+		int tmp_int1, tmp_int2;
+		inp_f >> tmp_int1 >> tmp_int2;
 		for(int n_i = 0; n_i < 8; n_i++) {
 			int i;
 			inp_f >> i;
@@ -62,6 +66,7 @@ void IntegralEq::input_mesh(string file_name) {
 		}
 		auto elem = new brick(el_nodes, el_dofs);
 		point cent = elem->get_center();
+
 		if (in_object(cent.x, cent.y, cent.z)) {
 			for(int i = 0; i < 3; i++) {
 				elem->add_dof(dofs_n);
@@ -71,30 +76,35 @@ void IntegralEq::input_mesh(string file_name) {
 		}
 		all_elements.push_back(elem);
 	}
-
+	inp_f.close();
+	all_elements_n = all_elements.size();
 	object_elements_n = object_elements.size();
 
-	G = [&](double x, double y, double z)->tfunc3d {
-		dcomplex k_val = (1.0 / sqrt(2.0), - 1.0 / sqrt(2.0)) * sqrt(sigma_0 * w);
-			return [&](double tx, double ty, double tz)->cmatrix(3) {
+}
+
+void IntegralEq::calculate() {
+	dcomplex k_val = (1.0 / sqrt(2.0), - 1.0 / sqrt(2.0)) * sqrt(sigma_0 * w * mu0);
+	G = [&, k_val](double x, double y, double z)->tfunc3d {
+			return [&, x, y, z](double tx, double ty, double tz)->cmatrix(3) {
 				cmatrix(3) tres;
 				vec3d dist(point(x, y, z), point(tx, ty, tz));
 				double r = dist.norm();
-				dcomplex exp_mult = (cos(k_val * r), sin(k_val * r));
+				double exp_agr = r * sqrt(sigma_0 * w * mu0) / sqrt(2.0);
+				double exp_abs = exp(exp_agr);
+				dcomplex exp_mult = (exp_abs * cos(exp_agr), exp_abs * sin(exp_agr));
 
 				dcomplex common_mult = exp_mult * (-k_val * k_val * r * r + 3.0 * dcomplex(0, 1) * k_val*r) / (4 * pi * r * r * r);
 				
-				for(int i = 0; i < 3; i++)
+				for(int i = 0; i < 3; i++) {
 					for(int j = 0; j < 3; j++)
 						tres[i][j] = common_mult * dist[i] * dist[j];
+					tres[i][i] = k_val * k_val * r * r - dcomplex(0, 1) * k_val * r - 1.0;
+ 				}
 
 				return tres;
 			};
 		
 	};
-}
-
-void IntegralEq::calculate() {
 
 	dyn_matrix A_glob;
 	A_glob.resize(dofs_n);
@@ -103,33 +113,48 @@ void IntegralEq::calculate() {
 	vector<dcomplex> b_glob;
 	b_glob.resize(dofs_n, 0);
 
+	cout << "Calculate: assambeling matrix\n";
 
 	for(size_t el_i = 0; el_i < object_elements_n; el_i++) {
+
 		point el_cent = object_elements[el_i]->get_center();
 		tfunc3d G_p = G(el_cent.x, el_cent.y, el_cent.z);
-		cmatrix(3) el_matrix = object_elements[el_i]->get_matrix_value(G_p, el_cent);
 
-		vec3d b_loc(0, 0, 0);
+		auto row_dofs = object_elements[el_i]->get_dofs_num();
+
 		for(auto&el_E0 : object_elements) {
+
+			// Расчёт вклада в матрицу
+			cmatrix(3) el_matrix = el_E0->get_matrix_value(G_p, el_cent);
+			auto col_dofs = el_E0->get_dofs_num();
+			for(size_t a_i = 0; a_i < row_dofs.size(); a_i++) {
+				for(size_t a_j = 0; a_j < col_dofs.size(); a_j++)
+					A_glob[row_dofs[a_i]][col_dofs[a_j]] += el_matrix[a_i][a_j];
+			}
+
+
+			// Расчёт вклада в правую часть
 			vfunc3d el_integ_func = [&](double x, double y, double z)->vec3d {
 				vec3d E0_val = calc_E0(x, y, z);
-				vec3d integ_res = G_p(x, y, z) * E0_val;
+				cmatrix(3) G_val = G_p(x, y, z);
+				vec3d integ_res =  G_val * E0_val;
 				return integ_res;
 			};
 			vec3d el_add = el_E0->integrate(el_integ_func);
-			b_loc = b_loc + el_add;
-		}
 
-		size_t add_i = 3 * el_i;
-		for(size_t a_i = 0; a_i < 3; a_i++) {
-			for(size_t a_j = 0; a_j < 3; a_j++) {
-				A_glob[add_i + a_i][add_i + a_j] += el_matrix[a_i][a_j];
-			}
-			b_glob[add_i + a_i] += b_loc[a_i];
+			for(size_t b_i = 0; b_i < row_dofs.size(); b_i++)
+				b_glob[row_dofs[b_i]] += el_add[b_i];
 		}
 
 	}
+
+
+	Ep_solution.clear();
+	Ep_solution.resize(dofs_n);
+
+	cout << "Calculate: solving\n";
 	SLAE_solution_Gauss(A_glob, b_glob.data(), Ep_solution.data(), dofs_n);
+	cout << "Calculate: solving completed\n";
 }
 
 vec3d IntegralEq::calc_E0(double x, double y, double z) {
@@ -143,4 +168,95 @@ vec3d IntegralEq::calc_E0(double x, double y, double z) {
 	}
 
 	return res;
+}
+
+vec3d IntegralEq::calc_Ep(double x, double y, double z) {
+	vec3d res(0, 0, 0);
+
+	tfunc3d G_p = G(x, y, z);
+	for(auto& el : object_elements) {
+		auto el_dofs = el->get_dofs_num();
+		vfunc3d integ_f = [&](double tx, double ty, double tz)->vec3d {
+			cmatrix(3) G_val = G_p(tx, ty, tz);
+			vec3d E_val(0, 0, 0);
+			for(int i = 0; i < el_dofs.size(); i++) {
+				E_val = E_val + Ep_solution[el_dofs[i]] * el->basis(i, tx, ty, tz);
+			}
+
+			vec3d res = G_val * E_val;
+			return res;
+		};
+		vec3d el_res = el->integrate(integ_f);
+		
+		res = res + el_res;
+
+	}
+
+	return res;
+
+}
+
+vec3d IntegralEq::calc_E(double x, double y, double z) {
+	vec3d res = calc_E0(x, y, z);
+
+	res = res + calc_Ep(x, y, z);;
+
+	return res;
+
+}
+
+void IntegralEq::output(string file_name) {
+	ofstream outpf(file_name.c_str());
+
+	outpf << "VARIABLES = \"x\" \"y\" \"z\" \"AxR\" \"AyR\" \"AzR\" \"AxI\" \"AyI\" \"AzI\"\n";  
+
+	for(auto& el : all_elements) {
+		point cent = el->get_center();
+		vec3d val = calc_E(cent.x, cent.y, cent.z);
+
+		outpf << cent.x << " " << cent.y << " " << cent.z << " " << val.x.real() << " " << val.y.real() << " " << val.z.real()<< " " << val.x.imag() << " " << val.y.imag() << " " << val.z.imag() << endl;
+
+	}
+	outpf.close();
+}
+
+void IntegralEq::outputE0(string file_name) {
+	ofstream outpf(file_name.c_str());
+
+	outpf << "VARIABLES = \"x\" \"y\" \"z\" \"AxR\" \"AyR\" \"AzR\" \"AxI\" \"AyI\" \"AzI\"\n";  
+
+	for(auto& el : all_elements) {
+		point cent = el->get_center();
+		vec3d val = calc_E0(cent.x, cent.y, cent.z);
+
+		outpf << cent.x << " " << cent.y << " " << cent.z << " " << val.x.real() << " " << val.y.real() << " " << val.z.real()<< " " << val.x.imag() << " " << val.y.imag() << " " << val.z.imag() << endl;
+
+	}
+	outpf.close();
+}
+
+void IntegralEq::outputE_surface(string file_name) {
+	ofstream outpf(file_name.c_str());
+
+	outpf << "VARIABLES = \"x\" \"y\" \"z\" \"AxR\" \"AyR\" \"AzR\" \"AxI\" \"AyI\" \"AzI\"\n";  
+
+	size_t n_x = 100, n_y = 100;
+	double x_min = -50, x_max = 50, y_min = -50, y_max = 50;
+	double z = 0;
+	double hx = (x_max - x_min) / n_x;
+	double hy = (y_max - y_min) / n_y;
+
+	for(size_t i_x = 0; i_x < n_x; i_x++) {
+		for(size_t i_y = 0; i_y < n_y; i_y++) {
+			point cent(x_min + i_x * hx, y_min + i_y * hy, z);
+			vec3d val = calc_E(cent.x, cent.y, cent.z);
+
+			outpf << cent.x << " " << cent.y << " " << cent.z << " " << val.x.real() << " " << val.y.real() << " " << val.z.real()<< " " << val.x.imag() << " " << val.y.imag() << " " << val.z.imag() << endl;
+
+		}
+
+	}
+	
+
+	outpf.close();
 }

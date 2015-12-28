@@ -1,6 +1,6 @@
 #include "elements_classes.h"
 #include "Gauss.h"
-
+#include <iostream>
 
 class IntegralEq {
 public:
@@ -8,7 +8,13 @@ public:
 	void input_mesh(string file_name);
 	
 	vec3d calc_E0(double x, double y, double z);
+	vec3d calc_Ep(double x, double y, double z);
+	vec3d calc_E(double x, double y, double z);
 	void calculate();
+
+	void output(string file_name);
+	void outputE0(string file_name);
+	void outputE_surface(string file_name);
 
 private:
 

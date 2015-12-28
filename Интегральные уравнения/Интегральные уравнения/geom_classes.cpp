@@ -153,7 +153,9 @@ dcomplex& vec3d::operator [] (const int i){
 	case 0: return x;
 	case 1: return y;
 	case 2: return z;
+	default : throw;
 	}
+	return x;
 }
 
 dcomplex vec3d::operator * (vec3d pr) {
