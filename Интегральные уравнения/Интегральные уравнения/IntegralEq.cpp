@@ -240,8 +240,8 @@ void IntegralEq::outputE_surface(string file_name) {
 
 	outpf << "VARIABLES = \"x\" \"y\" \"z\" \"AxR\" \"AyR\" \"AzR\" \"AxI\" \"AyI\" \"AzI\"\n";  
 
-	size_t n_x = 100, n_y = 100;
-	double x_min = -50, x_max = 50, y_min = -50, y_max = 50;
+	size_t n_x = 400, n_y = 400;
+	double x_min = -200, x_max = 200, y_min = -200, y_max = 200;
 	double z = 0;
 	double hx = (x_max - x_min) / n_x;
 	double hy = (y_max - y_min) / n_y;
