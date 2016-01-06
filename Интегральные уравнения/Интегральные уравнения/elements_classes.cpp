@@ -165,6 +165,7 @@ brick::brick(vector<node>& nodes_s, vector<dof_type> dofs_s) {
 	nodes  = nodes_s;
 	dofs = dofs_s;
 
+
 	// Упорядочим вершины, в нужном виде
 	sort(nodes.begin(), nodes.end(), [](const node& n1, const node& n2)->bool {
 		return n1.z > n2.z;
@@ -199,19 +200,77 @@ brick::brick(vector<node>& nodes_s, vector<dof_type> dofs_s) {
 		return pn;
 	};
 
-	double g_c = 1.0 /  sqrt(3.0);
-	for(int i = 0; i < 8; i++)
-		gauss_weights[i] = 1.0;
+	prepare_gauss(gauss_points_brick);
 
-	gauss_points_global[0] = trans_from_master(-g_c, -g_c, -g_c);
-	gauss_points_global[1] = trans_from_master(-g_c, g_c, -g_c);
-	gauss_points_global[2] = trans_from_master(g_c, -g_c, -g_c);
-	gauss_points_global[3] = trans_from_master(g_c, g_c, -g_c);
+	double g_a = sqrt(6.0 / 7.0);
+	double g_b = sqrt((960.0 - 33.0 * sqrt(238.0)) / 2726.0);
+	double g_c = sqrt((960.0 - 33.0 * sqrt(238.0)) / 2726.0);
+	double w_1 = 1078.0 / 3645.0;
+	double w_2 = 343.0 / 3645.0;
+	double w_3 = 43.0 / 135.0 + 829.0 * sqrt(238.0) / 136323.0;
+	double w_4 = 43.0 / 135.0 - 829.0 * sqrt(238.0) / 136323.0;
 
-	gauss_points_global[4] = trans_from_master(-g_c, -g_c, g_c);
-	gauss_points_global[5] = trans_from_master(-g_c, g_c, g_c);
-	gauss_points_global[6] = trans_from_master(g_c, -g_c, g_c);
-	gauss_points_global[7] = trans_from_master(g_c, g_c, g_c);
+	gauss_points_global[0] = trans_from_master(g_a, 0, 0);
+	gauss_points_global[1] = trans_from_master(-g_a, 0, 0);
+
+	gauss_points_global[2] = trans_from_master(0, g_a, 0);
+	gauss_points_global[3] = trans_from_master(0, -g_a, 0);
+
+	gauss_points_global[4] = trans_from_master(0, 0, g_a);
+	gauss_points_global[5] = trans_from_master(0, 0, -g_a);
+
+	for (int i = 0; i < 6; i++)
+		gauss_weights[i] = w_1;
+
+	gauss_points_global[6] = trans_from_master(g_a, g_a, 0);
+	gauss_points_global[7] = trans_from_master(g_a, -g_a, 0);
+	gauss_points_global[8] = trans_from_master(-g_a, g_a, 0);
+	gauss_points_global[9] = trans_from_master(-g_a, -g_a, 0);
+
+	gauss_points_global[10] = trans_from_master(g_a, 0, g_a);
+	gauss_points_global[11] = trans_from_master(g_a, 0, -g_a);
+	gauss_points_global[12] = trans_from_master(-g_a, 0, g_a);
+	gauss_points_global[13] = trans_from_master(-g_a, 0, -g_a);
+
+	gauss_points_global[14] = trans_from_master(0, g_a, g_a);
+	gauss_points_global[15] = trans_from_master(0, g_a, -g_a);
+	gauss_points_global[16] = trans_from_master(0, -g_a, g_a);
+	gauss_points_global[17] = trans_from_master(0, -g_a, -g_a);
+
+	for (int i = 6; i < 18; i++)
+		gauss_weights[i] = w_2;
+
+	gauss_points_global[18] = trans_from_master(g_b, g_b, g_b);
+	gauss_points_global[19] = trans_from_master(g_b, g_b, -g_b);
+	gauss_points_global[20] = trans_from_master(g_b, -g_b, g_b);
+	gauss_points_global[21] = trans_from_master(g_b, -g_b, -g_b);
+
+	gauss_points_global[22] = trans_from_master(-g_b, g_b, g_b);
+	gauss_points_global[23] = trans_from_master(-g_b, g_b, -g_b);
+	gauss_points_global[24] = trans_from_master(-g_b, -g_b, g_b);
+	gauss_points_global[25] = trans_from_master(-g_b, -g_b, -g_b);
+
+	for (int i = 18; i < 26; i++)
+		gauss_weights[i] = w_3;
+
+	gauss_points_global[26] = trans_from_master(g_c, g_c, g_c);
+	gauss_points_global[27] = trans_from_master(g_c, g_c, -g_c);
+	gauss_points_global[28] = trans_from_master(g_c, -g_c, g_c);
+	gauss_points_global[29] = trans_from_master(g_c, -g_c, -g_c);
+
+	gauss_points_global[30] = trans_from_master(-g_c, g_c, g_c);
+	gauss_points_global[31] = trans_from_master(-g_c, g_c, -g_c);
+	gauss_points_global[32] = trans_from_master(-g_c, -g_c, g_c);
+	gauss_points_global[33] = trans_from_master(-g_c, -g_c, -g_c);
+
+	for (int i = 26; i < 34; i++)
+		gauss_weights[i] = w_4;
+
+	// Проверка весов
+	double tmp = 0;
+	for (auto w_i : gauss_weights) {
+		tmp += w_i;
+	}
 
 }
 
@@ -252,7 +311,7 @@ cmatrix(3) brick::get_matrix_value(tfunc3d G, point pn) {
 			vec3d func_res = G_in_point * basis(i, x, y, z);
 			return func_res;
 		};
-		vec3d integ_part = integrate(integ_func);
+		vec3d integ_part = dcomplex(0, 1) * w * sigma * integrate(integ_func);
 		res_in_vec[i] = res_in_vec[i] - integ_part;
 
 		for(int j = 0; j < 3; j++)

@@ -11,8 +11,7 @@ typedef function<vec3d(double, double, double)> vfunc3d;
 typedef function<cmatrix(3)(double, double, double)> tfunc3d;
 
 const int gauss_points_sec = 3;
-const int gauss_points_tr = 3;
-const int gauss_points_tet = 4;
+const int gauss_points_brick = 34;
 
 class simple_element;
 

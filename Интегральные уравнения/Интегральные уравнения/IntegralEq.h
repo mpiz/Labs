@@ -15,6 +15,7 @@ public:
 	void output(string file_name);
 	void outputE0(string file_name);
 	void outputE_surface(string file_name);
+	void outputE_surface_tp(string file_name);
 
 private:
 
