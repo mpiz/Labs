@@ -168,14 +168,14 @@ brick::brick(vector<node>& nodes_s, vector<dof_type> dofs_s) {
 
 	// ”пор€дочим вершины, в нужном виде
 	sort(nodes.begin(), nodes.end(), [](const node& n1, const node& n2)->bool {
-		return n1.z > n2.z;
+		return n1.z < n2.z;
 	});
-	sort(nodes.begin(), nodes.begin() + 3, [](const node& n1, const node& n2)->bool {
-		return n1.y > n2.y;
+	sort(nodes.begin(), nodes.begin() + 4, [](const node& n1, const node& n2)->bool {
+		return n1.y < n2.y;
 	});
 
 	sort(nodes.begin()+4, nodes.end(), [](const node& n1, const node& n2)->bool {
-		return n1.y > n2.y;
+		return n1.y < n2.y;
 	});
 
 	for(auto i = 0; i < nodes.size(); i+=2) {
@@ -277,6 +277,10 @@ brick::brick(vector<node>& nodes_s, vector<dof_type> dofs_s) {
 point brick::get_center() {
 	return point (nodes[0].x + hx / 2.0, nodes[0].y + hy / 2.0, nodes[0].z + hz / 2.0);
 
+}
+
+point brick::get_node(size_t i) {
+	return point(nodes[i]);
 }
 
 void brick::set_env(double w_s, double sigma_s) {

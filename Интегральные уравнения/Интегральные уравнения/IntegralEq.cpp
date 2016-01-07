@@ -68,8 +68,14 @@ void IntegralEq::input_mesh(string file_name) {
 		}
 		auto elem = new brick(el_nodes, el_dofs);
 		point cent = elem->get_center();
+		bool in_obj = in_object(cent.x, cent.y, cent.z);
 
-		if (in_object(cent.x, cent.y, cent.z)) {
+		for (size_t n_i = 0; n_i < 8 && !in_obj; n_i++) {
+			point pn = elem->get_node(n_i);
+			in_obj = in_obj || in_object(pn.x, pn.y, pn.z);
+		}
+
+		if (in_obj) {
 			for(int i = 0; i < 3; i++) {
 				elem->add_dof(dofs_n);
 				dofs_n++;
@@ -193,7 +199,7 @@ vec3d IntegralEq::calc_E0(double x, double y, double z) {
 
 	double v1 = 0;
 	for (auto& sect : J_sect) {
-		func3d l = [](double x, double y, double z) {return 1.0; };
+		func3d l = [](double x, double y, double z) {return 1.0 / 4.0; };
 		v1 += sect->integrate(l);
 	}
 
@@ -203,13 +209,25 @@ vec3d IntegralEq::calc_E0(double x, double y, double z) {
 vec3d IntegralEq::calc_Ep(double x, double y, double z) {
 	vec3d res(0, 0, 0);
 
+	if (in_object(x, y, z)) {
+		bool found = false;
+		for (auto& el : object_elements) {
+			if (el->in_element(x, y, z)) {
+				auto loc_dofs = el->get_dofs();
+				for (size_t dof_i = 0; dof_i < loc_dofs.size(); dof_i++) {
+					res = res + Ep_solution[loc_dofs[dof_i]] * el->basis(dof_i, x, y, z);
+				}
+				return res;
+			}
+		}
+	}
 	tfunc3d G_p = G(x, y, z);
-	for(auto& el : object_elements) {
+	for (auto& el : object_elements) {
 		auto el_dofs = el->get_dofs_num();
 		vfunc3d integ_f = [&](double tx, double ty, double tz)->vec3d {
 			cmatrix(3) G_val = G_p(tx, ty, tz);
 			vec3d E_val(0, 0, 0);
-			for(int i = 0; i < el_dofs.size(); i++) {
+			for (int i = 0; i < el_dofs.size(); i++) {
 				E_val = E_val + Ep_solution[el_dofs[i]] * el->basis(i, tx, ty, tz);
 			}
 			vec3d E0_val = calc_E0(x, y, z);
@@ -220,7 +238,7 @@ vec3d IntegralEq::calc_Ep(double x, double y, double z) {
 			return res;
 		};
 		vec3d el_res = el->integrate(integ_f);
-		
+
 		res = res + el_res;
 
 	}
@@ -232,7 +250,7 @@ vec3d IntegralEq::calc_Ep(double x, double y, double z) {
 vec3d IntegralEq::calc_E(double x, double y, double z) {
 	vec3d res = calc_E0(x, y, z);
 
-	res = res + calc_Ep(x, y, z);;
+	res = res + calc_Ep(x, y, z);
 
 	return res;
 
@@ -301,8 +319,8 @@ void IntegralEq::outputE_surface_tp(string file_name) {
 	outpf << "TITLE = \"Slice\" \n";
 	outpf << "VARIABLES = \"x\" \"y\" \"AxR\" \"AyR\" \"AzR\" \"AxI\" \"AyI\" \"AzI\" \"Ax\" \"Ay\"\n";
 
-	size_t n_x = 100, n_y = 100;
-	double x_min = -50, x_max = 50, y_min = -50, y_max = 50;
+	size_t n_x = 20, n_y = 20;
+	double x_min = -20, x_max = 20, y_min = -20, y_max = 20;
 	double z = -3;
 	double hx = (x_max - x_min) / n_x;
 	double hy = (y_max - y_min) / n_y;
@@ -318,7 +336,7 @@ void IntegralEq::outputE_surface_tp(string file_name) {
 			vec3d val = calc_E(cent.x, cent.y, cent.z);
 
 			vec3d A_real;
-			dcomplex exp_val = exp(-dcomplex(0, 1) * w * t);
+			dcomplex exp_val = exp(dcomplex(0, 1) * w * t);
 			vec3d real_tmp = exp_val * val;
 			for (int a_i = 0; a_i < 3; a_i++)
 				A_real[a_i] = real_tmp[a_i].real() + real_tmp[a_i].imag();

@@ -3,8 +3,8 @@
 int main () {
 	IntegralEq inteq;
 
-	inteq.set_env(5, 0.1, 1, point(-100, -100, -10), point(100, 100, -2));
-	inteq.input_mesh("Group_1.dat");
+	inteq.set_env(5, 0.1, 1, point(-2, -2, -5), point(2, 2, -2));
+	inteq.input_mesh("Group_2.dat");
 	cout << "Reading mesh: completed\n";
 	inteq.calculate();
 

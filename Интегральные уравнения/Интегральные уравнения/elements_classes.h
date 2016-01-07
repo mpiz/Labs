@@ -98,6 +98,8 @@ public:
 
 	bool in_element(double x, double y, double z);
 	point get_center();
+
+	point get_node(size_t i);
 private:
 	vector<node> nodes;
 
