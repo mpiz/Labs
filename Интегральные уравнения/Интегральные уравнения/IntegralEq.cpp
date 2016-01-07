@@ -319,8 +319,8 @@ void IntegralEq::outputE_surface_tp(string file_name) {
 	outpf << "TITLE = \"Slice\" \n";
 	outpf << "VARIABLES = \"x\" \"y\" \"AxR\" \"AyR\" \"AzR\" \"AxI\" \"AyI\" \"AzI\" \"Ax\" \"Ay\"\n";
 
-	size_t n_x = 20, n_y = 20;
-	double x_min = -20, x_max = 20, y_min = -20, y_max = 20;
+	size_t n_x = 50, n_y = 50;
+	double x_min = -5, x_max = 5, y_min = -5, y_max = 5;
 	double z = -3;
 	double hx = (x_max - x_min) / n_x;
 	double hy = (y_max - y_min) / n_y;
